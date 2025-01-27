@@ -419,6 +419,12 @@ impl pallet_transaction_payment::Config for Runtime {
 	type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Runtime>;
 }
 
+impl pallet_sudo::Config for Runtime {
+	type RuntimeCall = RuntimeCall;
+	type RuntimeEvent = RuntimeEvent;
+	type WeightInfo = moonbeam_weights::pallet_sudo::WeightInfo<Runtime>;
+}
+
 impl pallet_evm_chain_id::Config for Runtime {}
 
 /// Current approximation of the gas/s consumption considering
@@ -1476,7 +1482,7 @@ construct_runtime! {
 		Parameters: pallet_parameters = 38,
 
 		// Has been permanently removed for safety reasons.
-		// Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 40,
+		Sudo: pallet_sudo::{Pallet, Call, Config<T>, Storage, Event<T>} = 40,
 
 		// Ethereum compatibility.
 		EthereumChainId: pallet_evm_chain_id::{Pallet, Storage, Config<T>} = 50,
@@ -1546,6 +1552,7 @@ mod benches {
 		[pallet_utility, Utility]
 		[pallet_timestamp, Timestamp]
 		[pallet_balances, Balances]
+		[pallet_sudo, Sudo]
 		[pallet_evm, EVM]
 		[pallet_assets, Assets]
 		[pallet_parachain_staking, ParachainStaking]

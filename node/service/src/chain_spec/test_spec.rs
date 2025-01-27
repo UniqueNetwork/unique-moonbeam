@@ -105,6 +105,8 @@ pub fn lazy_loading_spec_builder(para_id: ParaId) -> sc_chain_spec::ChainSpecBui
 		.expect("Provided valid json map"),
 	)
 	.with_genesis_config(crate::chain_spec::moonbeam::testnet_genesis(
+		// Alith is Sudo
+		AccountId::from(hex!("f24FF3a9CF04c71Dbc94D0b566f7A27B94566cac")),
 		// Treasury Council members: Baltathar, Charleth and Dorothy
 		vec![
 			AccountId::from(hex!("3Cd0A705a2DC65e5b1E1205896BaA2be8A07c6e0")),

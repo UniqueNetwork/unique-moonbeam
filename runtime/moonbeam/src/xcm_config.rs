@@ -829,15 +829,23 @@ impl sp_runtime::traits::Convert<AccountId, H160> for AccountIdToH160 {
 		account_id.into()
 	}
 }
+pub struct EvmForeignAssetIdFilter;
+impl frame_support::traits::Contains<AssetId> for EvmForeignAssetIdFilter {
+	fn contains(asset_id: &AssetId) -> bool {
+		use xcm_primitives::AssetTypeGetter as _;
+		// We should return true only if the AssetId doesn't exist in AssetManager
+		AssetManager::get_asset_type(*asset_id).is_none()
+	}
+}
 
 impl pallet_moonbeam_foreign_assets::Config for Runtime {
 	type AccountIdToH160 = AccountIdToH160;
-	type AssetIdFilter = Nothing;
+	type AssetIdFilter = EvmForeignAssetIdFilter;
 	type EvmRunner = EvmRunnerPrecompileOrEthXcm<MoonbeamCall, Self>;
-	type ForeignAssetCreatorOrigin = frame_system::EnsureNever<AccountId>;
-	type ForeignAssetFreezerOrigin = frame_system::EnsureNever<AccountId>;
-	type ForeignAssetModifierOrigin = frame_system::EnsureNever<AccountId>;
-	type ForeignAssetUnfreezerOrigin = frame_system::EnsureNever<AccountId>;
+	type ForeignAssetCreatorOrigin = EnsureRoot<AccountId>;
+	type ForeignAssetFreezerOrigin = EnsureRoot<AccountId>;
+	type ForeignAssetModifierOrigin = EnsureRoot<AccountId>;
+	type ForeignAssetUnfreezerOrigin = EnsureRoot<AccountId>;
 	type OnForeignAssetCreated = ();
 	type MaxForeignAssets = ConstU32<256>;
 	type RuntimeEvent = RuntimeEvent;
