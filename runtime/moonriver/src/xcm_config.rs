@@ -524,6 +524,7 @@ pub enum CurrencyId {
 
 impl AccountIdToCurrencyId<AccountId, CurrencyId> for Runtime {
 	fn account_to_currency_id(account: AccountId) -> Option<CurrencyId> {
+		log::info!("TEST AccountIdToCurrencyId {account:?}");
 		Some(match account {
 			// the self-reserve currency is identified by the pallet-balances address
 			a if a == H160::from_low_u64_be(2050).into() => CurrencyId::SelfReserve,
@@ -549,6 +550,7 @@ where
 	AssetXConverter: MaybeEquivalence<Location, AssetId>,
 {
 	fn convert(currency: CurrencyId) -> Option<Location> {
+		log::info!("TEST CurrencyIdToLocation {currency:?}");
 		match currency {
 			// For now and until Xtokens is adapted to handle 0.9.16 version we use
 			// the old anchoring here
@@ -768,6 +770,7 @@ impl AssetDefinition for EvmNftShim {
 
 impl AssetTransfer<FromTo<AccountId>> for EvmNftShim {
 	fn transfer(full_nft_id: &Self::Id, strategy: FromTo<AccountId>) -> DispatchResult {
+		log::info!("TEST nft-xcm-bridge transfer");
 		let (contract_addr, nft_id) = full_nft_id;
 		let FromTo(from, to) = strategy;
 
@@ -801,6 +804,7 @@ type StashableNfts =
 pub struct NftMatcher;
 impl MatchesInstance<FullNftId> for NftMatcher {
 	fn matches_instance(asset: &Asset) -> Result<FullNftId, MatchError> {
+		log::info!("TEST nft-xcm-bridge matches_instance");
 		match (asset.id.0.unpack(), &asset.fun) {
 			(
 				(

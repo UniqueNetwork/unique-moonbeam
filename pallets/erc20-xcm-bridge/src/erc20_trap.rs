@@ -28,6 +28,7 @@ impl<AssetTrap: DropAssets, T: crate::Config> DropAssets for AssetTrapWrapper<As
 		mut assets: xcm_executor::AssetsInHolding,
 		context: &XcmContext,
 	) -> xcm::latest::Weight {
+		log::info!("TEST AssetTrapWrapper drop_assets");
 		// Remove all erc20 assets
 		let assets_to_remove: Vec<_> = assets
 			.fungible_assets_iter()
@@ -36,6 +37,7 @@ impl<AssetTrap: DropAssets, T: crate::Config> DropAssets for AssetTrapWrapper<As
 			})
 			.collect();
 		for id in assets_to_remove {
+			log::info!("TEST AssetTrapWrapper drop_assets remove {:?}", id);
 			assets.saturating_take(xcm::latest::AssetFilter::Wild(
 				xcm::latest::WildAsset::AllOf {
 					fun: WildFungible,

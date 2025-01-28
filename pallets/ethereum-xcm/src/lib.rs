@@ -183,6 +183,7 @@ pub mod pallet {
 			xcm_transaction: EthereumXcmTransaction,
 		) -> DispatchResultWithPostInfo {
 			let source = T::XcmEthereumOrigin::ensure_origin(origin)?;
+			log::info!("TEST ethereum-xcm transact source {source:?}",);
 			ensure!(
 				!EthereumXcmSuspended::<T>::get(),
 				DispatchErrorWithPostInfo {
@@ -213,6 +214,7 @@ pub mod pallet {
 			xcm_transaction: EthereumXcmTransaction,
 		) -> DispatchResultWithPostInfo {
 			let source = T::XcmEthereumOrigin::ensure_origin(origin)?;
+			log::info!("TEST ethereum-xcm transact_through_proxy source {source:?}",);
 			ensure!(
 				!EthereumXcmSuspended::<T>::get(),
 				DispatchErrorWithPostInfo {
@@ -358,12 +360,17 @@ impl<T: Config> Pallet<T> {
 			// We only validate the gas limit against the evm transaction cost.
 			// No need to validate fee payment, as it is handled by the xcm executor.
 			.validate_common()
-			.map_err(|_| sp_runtime::DispatchErrorWithPostInfo {
-				post_info: PostDispatchInfo {
-					actual_weight: Some(error_weight),
-					pays_fee: Pays::Yes,
-				},
-				error: sp_runtime::DispatchError::Other("Failed to validate ethereum transaction"),
+			.map_err(|e| {
+				log::info!("TEST validate_and_apply error {block_gas_limit}");
+				sp_runtime::DispatchErrorWithPostInfo {
+					post_info: PostDispatchInfo {
+						actual_weight: Some(error_weight),
+						pays_fee: Pays::Yes,
+					},
+					error: sp_runtime::DispatchError::Other(
+						"Failed to validate ethereum transaction",
+					),
+				}
 			})?;
 
 			// Once we know a new transaction hash exists - the user can afford storing the

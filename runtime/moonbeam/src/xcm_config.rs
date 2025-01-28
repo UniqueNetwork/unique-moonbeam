@@ -172,10 +172,149 @@ pub type LocalAssetTransactor = XcmCurrencyAdapter<
 	(),
 >;
 
+pub struct ForeignFungiblesTransactorWrapper(ForeignFungiblesTransactor);
+
+impl xcm_executor::traits::TransactAsset for ForeignFungiblesTransactorWrapper {
+	fn can_check_in(
+		origin: &Location,
+		what: &Asset,
+		context: &xcm::latest::prelude::XcmContext,
+	) -> xcm::latest::prelude::XcmResult {
+		log::info!("TEST ForeignFungiblesTransactorWrapper can_check_in {origin:?}");
+		ForeignFungiblesTransactor::can_check_in(origin, what, context)
+	}
+
+	fn transfer_asset(
+		asset: &Asset,
+		from: &Location,
+		to: &Location,
+		context: &xcm::latest::prelude::XcmContext,
+	) -> Result<xcm_executor::AssetsInHolding, xcm::latest::prelude::XcmError> {
+		log::info!("TEST ForeignFungiblesTransactorWrapper can_check_in {from:?}");
+		ForeignFungiblesTransactor::transfer_asset(asset, from, to, context)
+	}
+
+	fn check_in(origin: &Location, what: &Asset, context: &xcm::latest::prelude::XcmContext) {
+		log::info!("TEST ForeignFungiblesTransactorWrapper check_in {origin:?}");
+		ForeignFungiblesTransactor::check_in(origin, what, context)
+	}
+
+	fn can_check_out(
+		dest: &Location,
+		what: &Asset,
+		context: &xcm::latest::prelude::XcmContext,
+	) -> xcm::latest::prelude::XcmResult {
+		log::info!("TEST ForeignFungiblesTransactorWrapper check_in {dest:?}");
+		ForeignFungiblesTransactor::can_check_out(dest, what, context)
+	}
+
+	fn check_out(dest: &Location, what: &Asset, context: &xcm::latest::prelude::XcmContext) {
+		log::info!("TEST ForeignFungiblesTransactorWrapper check_out {dest:?}");
+		ForeignFungiblesTransactor::check_out(dest, what, context)
+	}
+
+	fn deposit_asset(
+		what: &Asset,
+		who: &Location,
+		context: Option<&xcm::latest::prelude::XcmContext>,
+	) -> xcm::latest::prelude::XcmResult {
+		log::info!("TEST ForeignFungiblesTransactorWrapper deposit_asset {who:?}");
+		ForeignFungiblesTransactor::deposit_asset(what, who, context)
+	}
+
+	fn withdraw_asset(
+		what: &Asset,
+		who: &Location,
+		maybe_context: Option<&xcm::latest::prelude::XcmContext>,
+	) -> Result<xcm_executor::AssetsInHolding, xcm::latest::prelude::XcmError> {
+		log::info!("TEST ForeignFungiblesTransactorWrapper withdraw_asset {who:?}");
+		ForeignFungiblesTransactor::withdraw_asset(what, who, maybe_context)
+	}
+
+	fn internal_transfer_asset(
+		asset: &Asset,
+		from: &Location,
+		to: &Location,
+		context: &xcm::latest::prelude::XcmContext,
+	) -> Result<xcm_executor::AssetsInHolding, xcm::latest::prelude::XcmError> {
+		log::info!("TEST ForeignFungiblesTransactorWrapper internal_transfer_asset {from:?}");
+		ForeignFungiblesTransactor::internal_transfer_asset(asset, from, to, context)
+	}
+}
+pub struct LocalAssetTransactorWrapper(LocalAssetTransactor);
+
+impl xcm_executor::traits::TransactAsset for LocalAssetTransactorWrapper {
+	fn can_check_in(
+		origin: &Location,
+		what: &Asset,
+		context: &xcm::latest::prelude::XcmContext,
+	) -> xcm::latest::prelude::XcmResult {
+		log::info!("TEST LocalAssetTransactorWrapper can_check_in {origin:?}");
+		LocalAssetTransactor::can_check_in(origin, what, context)
+	}
+
+	fn transfer_asset(
+		asset: &Asset,
+		from: &Location,
+		to: &Location,
+		context: &xcm::latest::prelude::XcmContext,
+	) -> Result<xcm_executor::AssetsInHolding, xcm::latest::prelude::XcmError> {
+		log::info!("TEST LocalAssetTransactorWrapper can_check_in {from:?}");
+		LocalAssetTransactor::transfer_asset(asset, from, to, context)
+	}
+
+	fn check_in(origin: &Location, what: &Asset, context: &xcm::latest::prelude::XcmContext) {
+		log::info!("TEST LocalAssetTransactorWrapper check_in {origin:?}");
+		LocalAssetTransactor::check_in(origin, what, context)
+	}
+
+	fn can_check_out(
+		dest: &Location,
+		what: &Asset,
+		context: &xcm::latest::prelude::XcmContext,
+	) -> xcm::latest::prelude::XcmResult {
+		log::info!("TEST LocalAssetTransactorWrapper check_in {dest:?}");
+		LocalAssetTransactor::can_check_out(dest, what, context)
+	}
+
+	fn check_out(dest: &Location, what: &Asset, context: &xcm::latest::prelude::XcmContext) {
+		log::info!("TEST LocalAssetTransactorWrapper check_out {dest:?}");
+		LocalAssetTransactor::check_out(dest, what, context)
+	}
+
+	fn deposit_asset(
+		what: &Asset,
+		who: &Location,
+		context: Option<&xcm::latest::prelude::XcmContext>,
+	) -> xcm::latest::prelude::XcmResult {
+		log::info!("TEST LocalAssetTransactorWrapper deposit_asset {who:?}");
+		LocalAssetTransactor::deposit_asset(what, who, context)
+	}
+
+	fn withdraw_asset(
+		what: &Asset,
+		who: &Location,
+		maybe_context: Option<&xcm::latest::prelude::XcmContext>,
+	) -> Result<xcm_executor::AssetsInHolding, xcm::latest::prelude::XcmError> {
+		log::info!("TEST LocalAssetTransactorWrapper withdraw_asset {who:?}");
+		LocalAssetTransactor::withdraw_asset(what, who, maybe_context)
+	}
+
+	fn internal_transfer_asset(
+		asset: &Asset,
+		from: &Location,
+		to: &Location,
+		context: &xcm::latest::prelude::XcmContext,
+	) -> Result<xcm_executor::AssetsInHolding, xcm::latest::prelude::XcmError> {
+		log::info!("TEST LocalAssetTransactorWrapper internal_transfer_asset {from:?}");
+		LocalAssetTransactor::internal_transfer_asset(asset, from, to, context)
+	}
+}
+
 // We use all transactors
 pub type AssetTransactors = (
-	LocalAssetTransactor,
-	ForeignFungiblesTransactor,
+	LocalAssetTransactorWrapper,
+	ForeignFungiblesTransactorWrapper,
 	Erc20XcmBridge,
 	NftTransactor,
 	DerivativeNftDepositor,
@@ -774,6 +913,7 @@ impl AssetDefinition for EvmNftShim {
 
 impl AssetTransfer<FromTo<AccountId>> for EvmNftShim {
 	fn transfer(full_nft_id: &Self::Id, strategy: FromTo<AccountId>) -> DispatchResult {
+		log::info!("TEST EvmNftShim transfer");
 		let (contract_addr, nft_id) = full_nft_id;
 		let FromTo(from, to) = strategy;
 
@@ -828,6 +968,7 @@ impl Create<Owned<AccountId, DeriveAndReportId<NonFungibleAsset, FullNftId>>> fo
 	fn create(
 		strategy: Owned<AccountId, DeriveAndReportId<NonFungibleAsset, FullNftId>>,
 	) -> Result<FullNftId, DispatchError> {
+		log::info!("TEST EvmNftShim create");
 		let Owned {
 			owner,
 			id_assignment,
@@ -838,6 +979,7 @@ impl Create<Owned<AccountId, DeriveAndReportId<NonFungibleAsset, FullNftId>>> fo
 		let full_nft_id @ (contract_addr, nft_id) =
 			try_get_full_derivative_nft_id(&asset_id.0, &asset_instance)?;
 
+		log::info!("TEST EvmNftShim create input {full_nft_id:?}");
 		let mut input = Vec::with_capacity(Self::NFT_MINT_INTO_CALL_DATA_SIZE);
 		// Selector
 		input.extend_from_slice(&keccak256!("mintInto(address,uint256)")[..4]);
@@ -854,6 +996,7 @@ impl Create<Owned<AccountId, DeriveAndReportId<NonFungibleAsset, FullNftId>>> fo
 		let weight_limit: Weight =
 			pallet_evm::FixedGasWeightMapping::<Runtime>::gas_to_weight(gas_limit, true);
 
+		log::info!("TEST EvmNftShim create call");
 		let exec_info = EvmRunnerPrecompileOrEthXcm::<MoonbeamCall, Runtime>::call(
 			EvmForeignAssets::account_id(),
 			contract_addr.into(),
@@ -872,6 +1015,7 @@ impl Create<Owned<AccountId, DeriveAndReportId<NonFungibleAsset, FullNftId>>> fo
 		)
 		.map_err(|err| err.error)?;
 
+		log::info!("TEST EvmNftShim create exit_reason");
 		ensure!(
 			matches!(
 				exec_info.exit_reason,
@@ -886,6 +1030,8 @@ impl Create<Owned<AccountId, DeriveAndReportId<NonFungibleAsset, FullNftId>>> fo
 
 impl EvmNftShim {
 	fn is_nft_exists(full_nft_id: &FullNftId) -> Result<bool, DispatchError> {
+		log::info!("TEST is_nft_exists");
+
 		let (contract_addr, nft_id) = full_nft_id;
 
 		let mut input = Vec::with_capacity(Self::NFT_OWNER_OF_CALL_DATA_SIZE);
@@ -901,6 +1047,13 @@ impl EvmNftShim {
 		let weight_limit: Weight =
 			pallet_evm::FixedGasWeightMapping::<Runtime>::gas_to_weight(gas_limit, true);
 
+		log::info!(
+			"TEST is_nft_exists call {}",
+			input
+				.iter()
+				.map(|b| alloc::format!("{:02x}", b))
+				.collect::<String>()
+		);
 		let exec_info = EvmRunnerPrecompileOrEthXcm::<MoonbeamCall, Runtime>::call(
 			EvmForeignAssets::account_id(),
 			(*contract_addr).into(),
@@ -919,6 +1072,7 @@ impl EvmNftShim {
 		)
 		.map_err(|err| err.error)?;
 
+		log::info!("TEST is_nft_exists results {:?}", exec_info);
 		ensure!(
 			matches!(
 				exec_info.exit_reason,
@@ -927,6 +1081,7 @@ impl EvmNftShim {
 			DispatchError::Other("Contract transfer error")
 		);
 
+		log::info!("TEST is_nft_exists is_empty");
 		// return value is true.
 		let mut bytes = [0u8; 32];
 		U256::from(1).to_big_endian(&mut bytes);
@@ -936,6 +1091,8 @@ impl EvmNftShim {
 			!exec_info.value.is_empty(),
 			DispatchError::Other("Contract is_nft_exists error")
 		);
+
+		log::info!("TEST is_nft_exists owner {:?}", exec_info.value);
 
 		Ok(exec_info.value == bytes)
 	}
@@ -963,8 +1120,10 @@ fn try_get_full_derivative_nft_id(
 	location: &Location,
 	instance: &AssetInstance,
 ) -> Result<FullNftId, DispatchError> {
+	log::info!("TEST try_get_full_derivative_nft_id start");
 	let foreign_asset_id = EvmForeignAssets::asset_id_by_location(location)
 		.ok_or(DispatchError::Other("Foreign NFT not found"))?;
+	log::info!("TEST try_get_full_derivative_nft_id foreign_asset_id");
 	let contract_addr = EvmForeignAssets::contract_address_from_asset_id(foreign_asset_id);
 
 	let nft_id = match instance {
@@ -973,6 +1132,7 @@ fn try_get_full_derivative_nft_id(
 
 		_ => return Err(DispatchError::Other("Foreign NFT not found")),
 	};
+	log::info!("TEST try_get_full_derivative_nft_id nft_id");
 
 	Ok((contract_addr.into(), nft_id.into()))
 }
@@ -980,6 +1140,12 @@ fn try_get_full_derivative_nft_id(
 pub struct NftMatcher;
 impl MatchesInstance<FullNftId> for NftMatcher {
 	fn matches_instance(asset: &Asset) -> Result<FullNftId, MatchError> {
+		log::info!(
+			"TEST nft-xcm-bridge matches_instance {:?} {:?}",
+			asset.id.0.unpack(),
+			asset.fun
+		);
+
 		match (asset.id.0.unpack(), &asset.fun) {
 			(
 				(
@@ -990,17 +1156,20 @@ impl MatchesInstance<FullNftId> for NftMatcher {
 				),
 				&NonFungible(Index(nft_id)),
 			) if EvmForeignAssets::asset_id_by_location(&asset.id.0).is_none() => {
+				log::info!("TEST nft-xcm-bridge matched");
 				Ok((contract_addr.into(), nft_id.into()))
 			}
 			(_, NonFungible(asset_instance)) => {
 				let full_nft_id = try_get_full_derivative_nft_id(&asset.id.0, asset_instance)
 					.map_err(|_| MatchError::AssetNotHandled)?;
 
+				log::info!("TEST foreign nft asset found");
 				if EvmNftShim::is_nft_exists(&full_nft_id)
 					.map_err(|_| MatchError::AssetNotHandled)?
 				{
 					Ok(full_nft_id)
 				} else {
+					log::info!("TEST foreign nft asset instance not found");
 					Err(MatchError::AssetNotHandled)
 				}
 			}
@@ -1022,6 +1191,7 @@ impl DropAssets for NftTrapWrapper {
 		mut assets: xcm_executor::AssetsInHolding,
 		context: &xcm::latest::XcmContext,
 	) -> xcm::latest::Weight {
+		log::info!("TEST NftTrapWrapper drop_assets");
 		// Remove all erc20 assets
 		let assets_to_remove: Vec<_> = assets
 			.non_fungible_assets_iter()
@@ -1032,6 +1202,7 @@ impl DropAssets for NftTrapWrapper {
 			})
 			.collect();
 		for id in assets_to_remove {
+			log::info!("TEST NftTrapWrapper drop_assets remove {:?}", id);
 			assets.saturating_take(xcm::latest::AssetFilter::Wild(
 				xcm::latest::WildAsset::AllOf {
 					fun: WildFungible,

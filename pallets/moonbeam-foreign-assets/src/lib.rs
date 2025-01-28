@@ -82,6 +82,7 @@ enum MatchedAsset {
 
 impl<T: crate::Config> ForeignAssetsMatcher<T> {
 	fn match_asset(asset: &Asset) -> Result<(H160, MatchedAsset, AssetStatus), MatchError> {
+		log::info!("TEST moonbeam match_asset");
 		let XcmAssetId(ref location) = &asset.id;
 
 		let Some((asset_id, asset_status)) = AssetsByLocation::<T>::get(&location) else {
@@ -305,8 +306,10 @@ pub mod pallet {
 			symbol: BoundedVec<u8, ConstU32<256>>,
 			name: BoundedVec<u8, ConstU32<256>>,
 		) -> DispatchResult {
+			log::info!("TEST create_foreign_asset start");
 			T::ForeignAssetCreatorOrigin::ensure_origin(origin)?;
 
+			log::info!("TEST create_foreign_asset checks");
 			// Ensure such an assetId does not exist
 			ensure!(
 				!AssetsById::<T>::contains_key(&asset_id),
@@ -328,6 +331,7 @@ pub mod pallet {
 				Error::<T>::AssetIdFiltered
 			);
 
+			log::info!("TEST create_foreign_asset call evm");
 			let symbol = core::str::from_utf8(&symbol).map_err(|_| Error::<T>::InvalidSymbol)?;
 			let name = core::str::from_utf8(&name).map_err(|_| Error::<T>::InvalidTokenName)?;
 
@@ -338,6 +342,7 @@ pub mod pallet {
 			AssetsById::<T>::insert(&asset_id, &xcm_location);
 			AssetsByLocation::<T>::insert(&xcm_location, (asset_id, AssetStatus::Active));
 
+			log::info!("TEST create_foreign_asset emit events");
 			T::OnForeignAssetCreated::on_asset_created(&xcm_location, &asset_id);
 
 			Self::deposit_event(Event::ForeignAssetCreated {
@@ -345,6 +350,7 @@ pub mod pallet {
 				asset_id,
 				xcm_location,
 			});
+			log::info!("TEST create_foreign_asset finish");
 			Ok(())
 		}
 
@@ -459,6 +465,7 @@ pub mod pallet {
 			symbol: BoundedVec<u8, ConstU32<256>>,
 			name: BoundedVec<u8, ConstU32<256>>,
 		) -> DispatchResult {
+			log::info!("TEST create_foreign_nft_asset start");
 			T::ForeignAssetCreatorOrigin::ensure_origin(origin)?;
 
 			// Ensure such an assetId does not exist
@@ -482,11 +489,13 @@ pub mod pallet {
 				Error::<T>::AssetIdFiltered
 			);
 
+			log::info!("TEST create_foreign_nft_asset after checks");
 			let symbol = core::str::from_utf8(&symbol).map_err(|_| Error::<T>::InvalidSymbol)?;
 			let name = core::str::from_utf8(&name).map_err(|_| Error::<T>::InvalidTokenName)?;
 
 			let contract_address = EvmCaller::<T>::nft_create(asset_id, symbol, name)?;
 
+			log::info!("TEST create_foreign_nft_asset nft created");
 			// Insert the association assetId->foreigAsset
 			// Insert the association foreigAsset->assetId
 			AssetsById::<T>::insert(&asset_id, &xcm_location);
@@ -499,6 +508,7 @@ pub mod pallet {
 				asset_id,
 				xcm_location,
 			});
+			log::info!("TEST create_foreign_nft_asset finished");
 			Ok(())
 		}
 	}
@@ -508,6 +518,7 @@ pub mod pallet {
 		// we have just traced from which account it should have been withdrawn.
 		// So we will retrieve these information and make the transfer from the origin account.
 		fn deposit_asset(what: &Asset, who: &Location, _context: Option<&XcmContext>) -> XcmResult {
+			log::info!("TEST moonbeam deposit_asset");
 			let (contract_address, data, asset_status) =
 				ForeignAssetsMatcher::<T>::match_asset(what)?;
 
@@ -538,6 +549,7 @@ pub mod pallet {
 			to: &Location,
 			_context: &XcmContext,
 		) -> Result<AssetsInHolding, XcmError> {
+			log::info!("TEST moonbeam internal_transfer_asset");
 			let (contract_address, data, asset_status) =
 				ForeignAssetsMatcher::<T>::match_asset(asset)?;
 
@@ -579,6 +591,7 @@ pub mod pallet {
 			who: &Location,
 			_context: Option<&XcmContext>,
 		) -> Result<AssetsInHolding, XcmError> {
+			log::info!("TEST moonbeam withdraw_asset");
 			let (contract_address, data, asset_status) =
 				ForeignAssetsMatcher::<T>::match_asset(what)?;
 			let who = T::XcmLocationToH160::convert_location(who)

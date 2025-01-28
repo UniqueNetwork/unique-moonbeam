@@ -179,6 +179,7 @@ impl<T: crate::Config> EvmCaller<T> {
 		init.extend_from_slice(&encoded_args[32..]);
 
 		let contract_adress = Pallet::<T>::contract_address_from_asset_id(asset_id);
+		log::info!("TEST EvmForeignAssets nft_create {contract_adress}");
 
 		let exec_info = T::EvmRunner::create_force_address(
 			Pallet::<T>::account_id(),
@@ -197,8 +198,10 @@ impl<T: crate::Config> EvmCaller<T> {
 			contract_adress,
 		)
 		.map_err(|e| {
+			log::info!("TEST nft_create {:?}", e.error.into());
 			Error::NftContractCreationFail
 		})?;
+		log::info!("TEST EvmForeignAssets nft_create deployed");
 
 		ensure!(
 			matches!(

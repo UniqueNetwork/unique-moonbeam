@@ -172,6 +172,76 @@ pub type LocalAssetTransactor = XcmCurrencyAdapter<
 	(),
 >;
 
+pub struct LocalAssetTransactorWrapper(LocalAssetTransactor);
+
+impl xcm_executor::traits::TransactAsset for LocalAssetTransactorWrapper {
+	fn can_check_in(
+		origin: &Location,
+		what: &Asset,
+		context: &xcm::latest::prelude::XcmContext,
+	) -> xcm::latest::prelude::XcmResult {
+		log::info!("TEST LocalAssetTransactorWrapper can_check_in {origin:?}");
+		LocalAssetTransactor::can_check_in(origin, what, context)
+	}
+
+	fn transfer_asset(
+		asset: &Asset,
+		from: &Location,
+		to: &Location,
+		context: &xcm::latest::prelude::XcmContext,
+	) -> Result<xcm_executor::AssetsInHolding, xcm::latest::prelude::XcmError> {
+		log::info!("TEST LocalAssetTransactorWrapper can_check_in {from:?}");
+		LocalAssetTransactor::transfer_asset(asset, from, to, context)
+	}
+
+	fn check_in(origin: &Location, what: &Asset, context: &xcm::latest::prelude::XcmContext) {
+		log::info!("TEST LocalAssetTransactorWrapper check_in {origin:?}");
+		LocalAssetTransactor::check_in(origin, what, context)
+	}
+
+	fn can_check_out(
+		dest: &Location,
+		what: &Asset,
+		context: &xcm::latest::prelude::XcmContext,
+	) -> xcm::latest::prelude::XcmResult {
+		log::info!("TEST LocalAssetTransactorWrapper check_in {dest:?}");
+		LocalAssetTransactor::can_check_out(dest, what, context)
+	}
+
+	fn check_out(dest: &Location, what: &Asset, context: &xcm::latest::prelude::XcmContext) {
+		log::info!("TEST LocalAssetTransactorWrapper check_out {dest:?}");
+		LocalAssetTransactor::check_out(dest, what, context)
+	}
+
+	fn deposit_asset(
+		what: &Asset,
+		who: &Location,
+		context: Option<&xcm::latest::prelude::XcmContext>,
+	) -> xcm::latest::prelude::XcmResult {
+		log::info!("TEST LocalAssetTransactorWrapper deposit_asset {who:?}");
+		LocalAssetTransactor::deposit_asset(what, who, context)
+	}
+
+	fn withdraw_asset(
+		what: &Asset,
+		who: &Location,
+		maybe_context: Option<&xcm::latest::prelude::XcmContext>,
+	) -> Result<xcm_executor::AssetsInHolding, xcm::latest::prelude::XcmError> {
+		log::info!("TEST LocalAssetTransactorWrapper withdraw_asset {who:?}");
+		LocalAssetTransactor::withdraw_asset(what, who, maybe_context)
+	}
+
+	fn internal_transfer_asset(
+		asset: &Asset,
+		from: &Location,
+		to: &Location,
+		context: &xcm::latest::prelude::XcmContext,
+	) -> Result<xcm_executor::AssetsInHolding, xcm::latest::prelude::XcmError> {
+		log::info!("TEST LocalAssetTransactorWrapper internal_transfer_asset {from:?}");
+		LocalAssetTransactor::internal_transfer_asset(asset, from, to, context)
+	}
+}
+
 // We use all transactors
 // These correspond to
 // SelfReserve asset, both pre and post 0.9.16
@@ -179,7 +249,7 @@ pub type LocalAssetTransactor = XcmCurrencyAdapter<
 // We can remove the Old reanchor once
 // we import https://github.com/open-web3-stack/open-runtime-module-library/pull/708
 pub type AssetTransactors = (
-	LocalAssetTransactor,
+	LocalAssetTransactorWrapper,
 	EvmForeignAssets,
 	ForeignFungiblesTransactor,
 	Erc20XcmBridge,
@@ -768,6 +838,7 @@ impl AssetDefinition for EvmNftShim {
 
 impl AssetTransfer<FromTo<AccountId>> for EvmNftShim {
 	fn transfer(full_nft_id: &Self::Id, strategy: FromTo<AccountId>) -> DispatchResult {
+		log::info!("TEST nft-xcm-bridge transfer");
 		let (contract_addr, nft_id) = full_nft_id;
 		let FromTo(from, to) = strategy;
 
@@ -801,6 +872,7 @@ type StashableNfts =
 pub struct NftMatcher;
 impl MatchesInstance<FullNftId> for NftMatcher {
 	fn matches_instance(asset: &Asset) -> Result<FullNftId, MatchError> {
+		log::info!("TEST nft-xcm-bridge matches_instance");
 		match (asset.id.0.unpack(), &asset.fun) {
 			(
 				(

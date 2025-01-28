@@ -35,10 +35,6 @@ contract MyNft is ERC721, ERC721Pausable, Ownable {
         }
     }
 
-    function exists(uint256 tokenId) public view returns (bool) {
-        return _ownerOf(tokenId) != address(0);
-    }
-
     function approve(
         address to,
         uint256 tokenId

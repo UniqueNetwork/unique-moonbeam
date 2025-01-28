@@ -746,9 +746,53 @@ impl xcm_primitives::EnsureProxy<AccountId> for EthereumXcmEnsureProxy {
 	}
 }
 
+#[derive(Debug)]
+pub struct InvalidTransactionWrapper(InvalidTransaction);
+
+impl From<pallet_evm::TransactionValidationError> for InvalidTransactionWrapper {
+	fn from(validation_error: pallet_evm::TransactionValidationError) -> Self {
+		use pallet_evm::TransactionValidationError;
+		match validation_error {
+			TransactionValidationError::GasLimitTooLow => InvalidTransactionWrapper(
+				InvalidTransaction::Custom(TransactionValidationError::GasLimitTooLow as u8),
+			),
+			TransactionValidationError::GasLimitTooHigh => InvalidTransactionWrapper(
+				InvalidTransaction::Custom(TransactionValidationError::GasLimitTooHigh as u8),
+			),
+			TransactionValidationError::PriorityFeeTooHigh => InvalidTransactionWrapper(
+				InvalidTransaction::Custom(TransactionValidationError::PriorityFeeTooHigh as u8),
+			),
+			TransactionValidationError::BalanceTooLow => {
+				InvalidTransactionWrapper(InvalidTransaction::Payment)
+			}
+			TransactionValidationError::TxNonceTooLow => {
+				InvalidTransactionWrapper(InvalidTransaction::Stale)
+			}
+			TransactionValidationError::TxNonceTooHigh => {
+				InvalidTransactionWrapper(InvalidTransaction::Future)
+			}
+			TransactionValidationError::InvalidFeeInput => InvalidTransactionWrapper(
+				InvalidTransaction::Custom(TransactionValidationError::InvalidFeeInput as u8),
+			),
+			TransactionValidationError::InvalidChainId => InvalidTransactionWrapper(
+				InvalidTransaction::Custom(TransactionValidationError::InvalidChainId as u8),
+			),
+			TransactionValidationError::InvalidSignature => InvalidTransactionWrapper(
+				InvalidTransaction::Custom(TransactionValidationError::InvalidSignature as u8),
+			),
+			TransactionValidationError::GasPriceTooLow => InvalidTransactionWrapper(
+				InvalidTransaction::Custom(TransactionValidationError::GasPriceTooLow as u8),
+			),
+			TransactionValidationError::UnknownError => InvalidTransactionWrapper(
+				InvalidTransaction::Custom(TransactionValidationError::UnknownError as u8),
+			),
+		}
+	}
+}
+
 impl pallet_ethereum_xcm::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
-	type InvalidEvmTransactionError = pallet_ethereum::InvalidTransactionWrapper;
+	type InvalidEvmTransactionError = InvalidTransactionWrapper;
 	type ValidatedTransaction = pallet_ethereum::ValidatedTransaction<Self>;
 	type XcmEthereumOrigin = pallet_ethereum_xcm::EnsureXcmEthereumTransaction;
 	type ReservedXcmpWeight = ReservedXcmpWeight;

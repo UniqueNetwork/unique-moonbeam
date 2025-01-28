@@ -187,6 +187,10 @@ where
 		weight: u64,
 	) -> EvmResult {
 		let origin = Runtime::AddressMapping::into_account_id(handle.context().caller);
+		log::info!(
+			"TEST transfer_multi_assets origin {origin:?} caller {:?}",
+			handle.context().caller
+		);
 		let to_balance = amount
 			.try_into()
 			.map_err(|_| RevertReason::value_is_too_large("balance type").in_field("amount"))?;
@@ -425,6 +429,8 @@ where
 		destination: Location,
 		weight: u64,
 	) -> EvmResult {
+		log::info!("start transfer nft {nft:?} fee {fee:?}");
+
 		let origin = Runtime::AddressMapping::into_account_id(handle.context().caller);
 
 		let dest_weight_limit = if weight == u64::MAX {
@@ -454,6 +460,7 @@ where
 			weight_limit: dest_weight_limit,
 		};
 
+		log::info!("dispatch transfer nft");
 		RuntimeHelper::<Runtime>::try_dispatch(
 			handle,
 			Some(origin).into(),

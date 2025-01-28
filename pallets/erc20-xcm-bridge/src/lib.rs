@@ -69,6 +69,7 @@ pub mod pallet {
 
 	impl<T: Config> Pallet<T> {
 		pub fn is_erc20_asset(asset: &Asset) -> bool {
+			log::info!("TEST is_erc20_asset");
 			Erc20Matcher::<T::Erc20MultilocationPrefix>::is_erc20_asset(asset)
 		}
 		pub fn gas_limit_of_erc20_transfer(asset_id: &AssetId) -> u64 {
@@ -103,6 +104,7 @@ pub mod pallet {
 			amount: U256,
 			gas_limit: u64,
 		) -> Result<(), Erc20TransferError> {
+			log::info!("TEST erc20_transfer");
 			let mut input = Vec::with_capacity(ERC20_TRANSFER_CALL_DATA_SIZE);
 			// ERC20.transfer method hash
 			input.extend_from_slice(&ERC20_TRANSFER_SELECTOR);
@@ -158,9 +160,11 @@ pub mod pallet {
 		// we have just traced from which account it should have been withdrawn.
 		// So we will retrieve these information and make the transfer from the origin account.
 		fn deposit_asset(what: &Asset, who: &Location, _context: Option<&XcmContext>) -> XcmResult {
+			log::info!("TEST deposit_asset who {who:?}");
 			let (contract_address, amount) =
 				Erc20Matcher::<T::Erc20MultilocationPrefix>::matches_fungibles(what)?;
 
+			log::info!("TEST deposit_asset contract_address {contract_address}");
 			let beneficiary = T::AccountIdConverter::convert_location(who)
 				.ok_or(MatchError::AccountIdConversionFailed)?;
 
@@ -205,9 +209,11 @@ pub mod pallet {
 			to: &Location,
 			_context: &XcmContext,
 		) -> Result<AssetsInHolding, XcmError> {
+			log::info!("TEST internal_transfer_asset from {from:?}");
 			let (contract_address, amount) =
 				Erc20Matcher::<T::Erc20MultilocationPrefix>::matches_fungibles(asset)?;
 
+			log::info!("TEST internal_transfer_asset contract_address {contract_address:?}");
 			let from = T::AccountIdConverter::convert_location(from)
 				.ok_or(MatchError::AccountIdConversionFailed)?;
 
@@ -237,8 +243,10 @@ pub mod pallet {
 			who: &Location,
 			_context: Option<&XcmContext>,
 		) -> Result<AssetsInHolding, XcmError> {
+			log::info!("TEST withdraw_asset what {:?}", what.id.0);
 			let (contract_address, amount) =
 				Erc20Matcher::<T::Erc20MultilocationPrefix>::matches_fungibles(what)?;
+			log::info!("TEST withdraw_asset contract_address {contract_address}");
 			let who = T::AccountIdConverter::convert_location(who)
 				.ok_or(MatchError::AccountIdConversionFailed)?;
 
