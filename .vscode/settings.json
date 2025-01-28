@@ -1,6 +1,11 @@
 {
   "editor.formatOnSave": true,
-  "editor.rulers": [100],
+  "editor.rulers": [
+    100
+  ],
+  "rust-analyzer.cargo.extraEnv": {
+    "SKIP_WASM_BUILD": "1"
+  },
   "[typescript]": {
     "editor.defaultFormatter": "vscode.typescript-language-features"
   },

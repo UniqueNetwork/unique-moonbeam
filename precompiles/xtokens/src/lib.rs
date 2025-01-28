@@ -25,10 +25,10 @@ use pallet_evm::AddressMapping;
 use precompile_utils::prelude::*;
 use sp_core::{ConstU32, H160, U256};
 use sp_runtime::traits::{Convert, Dispatchable};
-use sp_std::{boxed::Box, convert::TryInto, marker::PhantomData, vec::Vec};
+use sp_std::{boxed::Box, convert::TryInto, marker::PhantomData, vec, vec::Vec};
 use sp_weights::Weight;
 use xcm::{
-	latest::{Asset, AssetId, Assets, Fungibility, Location, WeightLimit},
+	latest::{Asset, AssetId, AssetInstance, Assets, Fungibility, Location, WeightLimit},
 	VersionedAssets, VersionedLocation,
 };
 use xcm_primitives::{
@@ -412,10 +412,70 @@ where
 		Ok(())
 	}
 
+	#[precompile::public(
+		"transferNftWithFee(((uint8,bytes[]),bytes),((uint8,bytes[]),uint256),(uint8,bytes[]),uint64)"
+	)]
+	#[precompile::public(
+		"transfer_nft_with_fee(((uint8,bytes[]),bytes),((uint8,bytes[]),uint256),(uint8,bytes[]),uint64)"
+	)]
+	fn transfer_nft_with_fee(
+		handle: &mut impl PrecompileHandle,
+		nft: NftEvmAsset,
+		fee: EvmCurrency,
+		destination: Location,
+		weight: u64,
+	) -> EvmResult {
+		let origin = Runtime::AddressMapping::into_account_id(handle.context().caller);
+
+		let dest_weight_limit = if weight == u64::MAX {
+			WeightLimit::Unlimited
+		} else {
+			WeightLimit::Limited(Weight::from_parts(weight, DEFAULT_PROOF_SIZE))
+		};
+
+		let nft_asset = Self::nft_to_asset(nft).map_err(|e| e.in_field("nft"))?;
+
+		let fee_asset: Asset = fee.try_into().map_err(|e: Revert| e.in_field("fee"))?;
+
+		let (chain_part, beneficiary) = split_location_into_chain_part_and_beneficiary(destination)
+			.ok_or_else(|| RevertReason::custom("Invalid destination").in_field("destination"))?;
+
+		let assets =
+			Assets::from_sorted_and_deduplicated(vec![fee_asset, nft_asset]).map_err(|_| {
+				RevertReason::custom("Provided assets either not sorted nor deduplicated")
+					.in_field("assets")
+			})?;
+
+		let call = pallet_xcm::Call::<Runtime>::transfer_assets {
+			dest: Box::new(VersionedLocation::V4(chain_part)),
+			beneficiary: Box::new(VersionedLocation::V4(beneficiary)),
+			assets: Box::new(VersionedAssets::V4(assets)),
+			fee_asset_item: 0,
+			weight_limit: dest_weight_limit,
+		};
+
+		RuntimeHelper::<Runtime>::try_dispatch(
+			handle,
+			Some(origin).into(),
+			call,
+			SYSTEM_ACCOUNT_SIZE,
+		)?;
+
+		Ok(())
+	}
+
 	fn currency_to_asset(currency_id: CurrencyIdOf<Runtime>, amount: u128) -> Option<Asset> {
 		Some(Asset {
 			fun: Fungibility::Fungible(amount),
 			id: AssetId(<CurrencyIdToLocationOf<Runtime>>::convert(currency_id)?),
+		})
+	}
+
+	fn nft_to_asset(asset: NftEvmAsset) -> Result<Asset, Revert> {
+		assert_eq!(asset.location.parents, 0);
+		Ok(Asset {
+			fun: Fungibility::NonFungible(asset.nft_id),
+			id: AssetId(asset.location),
 		})
 	}
 }
@@ -436,6 +496,22 @@ impl From<(Address, U256)> for Currency {
 	}
 }
 
+// Currency
+#[derive(solidity::Codec, Debug)]
+pub struct EvmCurrency {
+	address: Location,
+	amount: U256,
+}
+
+impl From<(Location, U256)> for EvmCurrency {
+	fn from(tuple: (Location, U256)) -> Self {
+		EvmCurrency {
+			address: tuple.0,
+			amount: tuple.1,
+		}
+	}
+}
+
 #[derive(solidity::Codec)]
 pub struct EvmAsset {
 	location: Location,
@@ -447,6 +523,34 @@ impl From<(Location, U256)> for EvmAsset {
 		EvmAsset {
 			location: tuple.0,
 			amount: tuple.1,
+		}
+	}
+}
+
+impl TryFrom<EvmCurrency> for Asset {
+	type Error = Revert;
+
+	fn try_from(value: EvmCurrency) -> Result<Self, Self::Error> {
+		Ok(Asset {
+			fun: Fungibility::Fungible(value.amount.try_into().map_err(|_| {
+				RevertReason::value_is_too_large("balance type").in_field("amount")
+			})?),
+			id: AssetId(value.address),
+		})
+	}
+}
+
+#[derive(solidity::Codec, Debug)]
+pub struct NftEvmAsset {
+	location: Location,
+	nft_id: AssetInstance,
+}
+
+impl From<(Location, AssetInstance)> for NftEvmAsset {
+	fn from(tuple: (Location, AssetInstance)) -> Self {
+		NftEvmAsset {
+			location: tuple.0,
+			nft_id: tuple.1,
 		}
 	}
 }

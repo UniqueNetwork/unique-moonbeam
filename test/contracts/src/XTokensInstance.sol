@@ -81,4 +81,13 @@ contract XTokensInstance is Xtokens {
             weight
         );
     }
+
+    function transferNftWithFee(
+        NftMultiAsset memory nft,
+        Currency memory fee,
+        Multilocation memory destination,
+        uint64 weight
+    ) external override {
+        XTOKENS_CONTRACT.transferNftWithFee(nft, fee, destination, weight);
+    }
 }

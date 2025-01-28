@@ -28,7 +28,7 @@ use moonbeam_runtime_common::weights as moonbase_weights;
 use moonkit_xcm_primitives::AccountIdAssetIdConversion;
 use sp_runtime::{
 	traits::{Hash as THash, MaybeEquivalence, PostDispatchInfoOf},
-	DispatchErrorWithPostInfo,
+	DispatchErrorWithPostInfo, DispatchResult,
 };
 
 use frame_support::{
@@ -36,8 +36,17 @@ use frame_support::{
 	traits::{EitherOfDiverse, Everything, Nothing, PalletInfoAccess, TransformOrigin},
 };
 
+use frame_support::traits::tokens::asset_ops::{
+	common_strategies::FromTo, AssetDefinition, Transfer as AssetTransfer,
+};
+
 use frame_system::{EnsureRoot, RawOrigin};
 use sp_core::{ConstU32, H160, H256};
+
+use xcm_builder::unique_instances::{
+	RestoreOnCreate, SimpleStash, StashOnDestroy, UniqueInstancesAdapter, UniqueInstancesOps,
+};
+
 use sp_weights::Weight;
 use xcm_builder::{
 	AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -51,11 +60,14 @@ use xcm_builder::{
 use parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling};
 
 use xcm::latest::prelude::{
-	AllOf, Asset, AssetFilter, GlobalConsensus, InteriorLocation, Junction, Location, NetworkId,
-	PalletInstance, Parachain, Wild, WildFungible,
+	AllOf, Array32, Asset, AssetFilter, Fungibility::NonFungible, GlobalConsensus,
+	InteriorLocation, Junction, Junction::AccountKey20, Location, NetworkId, PalletInstance,
+	Parachain, Wild, WildFungible,
 };
 
-use xcm_executor::traits::{CallDispatcher, ConvertLocation, JustTry};
+use xcm_executor::traits::{
+	CallDispatcher, ConvertLocation, Error as MatchError, JustTry, MatchesInstance,
+};
 
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
 use xcm_primitives::{
@@ -171,6 +183,7 @@ pub type AssetTransactors = (
 	EvmForeignAssets,
 	ForeignFungiblesTransactor,
 	Erc20XcmBridge,
+	NftTransactor,
 );
 
 /// This is the type we use to convert an (incoming) XCM origin into a local `Origin` instance,
@@ -745,6 +758,71 @@ impl pallet_xcm_weight_trader::Config for Runtime {
 	#[cfg(feature = "runtime-benchmarks")]
 	type NotFilteredLocation = RelayLocation;
 }
+
+pub struct EvmNftShim;
+
+type FullNftId = (AccountId, U256);
+impl AssetDefinition for EvmNftShim {
+	type Id = FullNftId;
+}
+
+impl AssetTransfer<FromTo<AccountId>> for EvmNftShim {
+	fn transfer(full_nft_id: &Self::Id, strategy: FromTo<AccountId>) -> DispatchResult {
+		let (contract_addr, nft_id) = full_nft_id;
+		let FromTo(from, to) = strategy;
+
+		todo!(
+			r#"
+				try to interact with the EVM contract at the `contract_addr` address
+				to perform the transfer of the `nft_id`
+				from the `from` account to the `to` account
+			"#
+		);
+
+		Ok(())
+	}
+}
+
+parameter_types! {
+	pub StashAccountId: AccountId = crate::Treasury::account_id();
+}
+
+type NftStash = SimpleStash<StashAccountId, EvmNftShim>;
+
+// This NFT engine which will:
+// 1. transfer the NFT to the stash on destroy
+// 2. on transfer it will just transfer
+// 3. transfer the NFT from the stash to the beneficiary on create
+//
+// We will use it as a parameter to the XCM adapter.
+type StashableNfts =
+	UniqueInstancesOps<RestoreOnCreate<NftStash>, EvmNftShim, StashOnDestroy<NftStash>>;
+
+pub struct NftMatcher;
+impl MatchesInstance<FullNftId> for NftMatcher {
+	fn matches_instance(asset: &Asset) -> Result<FullNftId, MatchError> {
+		match (asset.id.0.unpack(), &asset.fun) {
+			(
+				(
+					0,
+					&[AccountKey20 {
+						key: contract_addr, ..
+					}],
+				),
+				NonFungible(Array32(nft_id)),
+			) => {
+				// ... do some conversions if necessary...
+
+				Ok((contract_addr.into(), nft_id.into()))
+			}
+			/* TODO: handle the derivatives, will be implemented in the derivatives support section */
+			_ => return Err(MatchError::AssetNotHandled),
+		}
+	}
+}
+
+pub type NftTransactor =
+	UniqueInstancesAdapter<AccountId, LocationToAccountId, NftMatcher, StashableNfts>;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod testing {

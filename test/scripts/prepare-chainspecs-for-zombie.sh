@@ -15,9 +15,10 @@ TYPE=$(echo $RESPONSE | jq -r '.object.type')
     URL=$(echo $RESPONSE | jq -r '.object.url')
     TAG_RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" $URL)
     TAG_RESPONSE_CLEAN=$(echo $TAG_RESPONSE | tr -d '\000-\037')
+    echo $TAG_RESPONSE
     LATEST_RT_SHA8=$(echo $TAG_RESPONSE_CLEAN | jq -r '.object.sha' | cut -c -8)
     fi
-DOCKER_TAG="moonbeamfoundation/moonbeam:sha-$LATEST_RT_SHA8"
+DOCKER_TAG="moonbeamfoundation/moonbeam:latest"
 
 echo $DOCKER_TAG
 
