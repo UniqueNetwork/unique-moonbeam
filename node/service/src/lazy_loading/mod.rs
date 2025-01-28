@@ -447,7 +447,13 @@ where
 		));
 	};
 
-	let net_config = FullNetworkConfiguration::<_, _, Net>::new(&config.network);
+	let net_config = FullNetworkConfiguration::<_, _, Net>::new(
+		&config.network,
+		config
+			.prometheus_config
+			.as_ref()
+			.map(|cfg| cfg.registry.clone()),
+	);
 
 	let metrics = Net::register_notification_metrics(
 		config.prometheus_config.as_ref().map(|cfg| &cfg.registry),

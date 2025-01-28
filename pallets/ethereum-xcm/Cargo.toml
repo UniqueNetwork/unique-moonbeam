@@ -1,6 +1,6 @@
 [package]
 name = "pallet-ethereum-xcm"
-authors = [ "Parity Technologies <admin@parity.io>" ]
+authors = ["Parity Technologies <admin@parity.io>"]
 description = "Xcm Transact compatibility for pallet-ethereum."
 edition = "2021"
 license = "Apache-2.0"
@@ -8,10 +8,11 @@ repository = "https://github.com/moonbeam-foundation/moonbeam/"
 version = "1.0.0-dev"
 
 [package.metadata.docs.rs]
-targets = [ "x86_64-unknown-linux-gnu" ]
+targets = ["x86_64-unknown-linux-gnu"]
 
 [dependencies]
-ethereum = { workspace = true, features = [ "with-codec" ] }
+ethereum = { workspace = true, features = ["with-codec"] }
+log = { workspace = true }
 serde = { workspace = true, optional = true }
 
 # Parity
@@ -19,7 +20,7 @@ environmental = { workspace = true }
 ethereum-types = { workspace = true }
 parity-scale-codec = { workspace = true }
 rlp = { workspace = true }
-scale-info = { workspace = true, features = [ "derive" ] }
+scale-info = { workspace = true, features = ["derive"] }
 
 # Substrate
 frame-support = { workspace = true }
@@ -34,29 +35,32 @@ fp-ethereum = { workspace = true }
 fp-evm = { workspace = true }
 fp-rpc = { workspace = true }
 fp-self-contained = { workspace = true }
-pallet-evm = { workspace = true, features = [ "forbid-evm-reentrancy" ] }
+pallet-evm = { workspace = true, features = ["forbid-evm-reentrancy"] }
 xcm-primitives = { workspace = true }
 
 # Benchmarks
 frame-benchmarking = { workspace = true, optional = true }
 
 [dev-dependencies]
-pallet-evm-precompile-proxy = { workspace = true, features = [ "std" ] }
+pallet-evm-precompile-proxy = { workspace = true, features = ["std"] }
 
-pallet-ethereum = { workspace = true, features = [ "forbid-evm-reentrancy", "std" ] }
-pallet-evm = { workspace = true, features = [ "forbid-evm-reentrancy", "std" ] }
-pallet-proxy = { workspace = true, features = [ "std" ] }
+pallet-ethereum = { workspace = true, features = [
+	"forbid-evm-reentrancy",
+	"std",
+] }
+pallet-evm = { workspace = true, features = ["forbid-evm-reentrancy", "std"] }
+pallet-proxy = { workspace = true, features = ["std"] }
 
 hex = { workspace = true }
 # Parity
-libsecp256k1 = { workspace = true, features = [ "hmac", "static-context" ] }
+libsecp256k1 = { workspace = true, features = ["hmac", "static-context"] }
 # Substrate FRAME
-pallet-balances = { workspace = true, features = [ "std" ] }
+pallet-balances = { workspace = true, features = ["std"] }
 # Substrate
-sp-core = { workspace = true, features = [ "std" ] }
+sp-core = { workspace = true, features = ["std"] }
 
 [features]
-default = [ "std" ]
+default = ["std"]
 std = [
 	"ethereum-types/std",
 	"ethereum/std",
@@ -82,13 +86,13 @@ std = [
 	"sp-std/std",
 	"xcm-primitives/std",
 ]
-runtime-benchmarks = [ 
-	"frame-benchmarking", 
+runtime-benchmarks = [
+	"frame-benchmarking",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
-	"pallet-evm/runtime-benchmarks", 
+	"pallet-evm/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
-	"pallet-ethereum/runtime-benchmarks"
+	"pallet-ethereum/runtime-benchmarks",
 ]
-try-runtime = [ "frame-support/try-runtime" ]
+try-runtime = ["frame-support/try-runtime"]

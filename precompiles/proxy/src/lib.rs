@@ -181,7 +181,7 @@ where
 		handle.record_db_read::<Runtime>(
 			28 + (29 * (<Runtime as pallet_proxy::Config>::MaxProxies::get() as usize)) + 8,
 		)?;
-		if ProxyPallet::<Runtime>::proxies(&origin)
+		if ProxyPallet::<Runtime>::proxies(origin.clone())
 			.0
 			.iter()
 			.any(|pd| pd.delegate == delegate)

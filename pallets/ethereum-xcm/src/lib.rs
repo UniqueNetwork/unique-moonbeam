@@ -338,14 +338,15 @@ impl<T: Config> Pallet<T> {
 					_ => (None, None),
 				};
 
+			let block_gas_limit =
+				U256::from(<T as pallet_evm::Config>::GasWeightMapping::weight_to_gas(
+					T::ReservedXcmpWeight::get(),
+				));
+
 			let _ = CheckEvmTransaction::<T::InvalidEvmTransactionError>::new(
 				CheckEvmTransactionConfig {
 					evm_config: T::config(),
-					block_gas_limit: U256::from(
-						<T as pallet_evm::Config>::GasWeightMapping::weight_to_gas(
-							T::ReservedXcmpWeight::get(),
-						),
-					),
+					block_gas_limit,
 					base_fee: U256::zero(),
 					chain_id: 0u64,
 					is_transactional: true,

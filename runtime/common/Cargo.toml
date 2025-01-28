@@ -63,6 +63,7 @@ sp-io = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
 sp-genesis-builder = { workspace = true }
+sp-weights = { workspace = true }
 frame-try-runtime = { workspace = true }
 
 # Frontier

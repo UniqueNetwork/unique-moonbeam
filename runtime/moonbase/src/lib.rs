@@ -360,7 +360,7 @@ where
 	R: pallet_balances::Config + pallet_treasury::Config,
 {
 	// this seems to be called for substrate-based transactions
-	fn on_unbalanceds<B>(
+	fn on_unbalanceds(
 		mut fees_then_tips: impl Iterator<Item = Credit<R::AccountId, pallet_balances::Pallet<R>>>,
 	) {
 		if let Some(fees) = fees_then_tips.next() {
@@ -1091,7 +1091,8 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 						| RuntimeCall::OpenTechCommitteeCollective(..)
 						| RuntimeCall::Identity(..)
 						| RuntimeCall::Utility(..)
-						| RuntimeCall::Proxy(..) | RuntimeCall::AuthorMapping(..)
+						| RuntimeCall::Proxy(..)
+						| RuntimeCall::AuthorMapping(..)
 						| RuntimeCall::CrowdloanRewards(
 							pallet_crowdloan_rewards::Call::claim { .. }
 						)

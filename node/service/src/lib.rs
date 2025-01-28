@@ -678,7 +678,13 @@ where
 	let prometheus_registry = parachain_config.prometheus_registry().cloned();
 	let transaction_pool = params.transaction_pool.clone();
 	let import_queue_service = params.import_queue.service();
-	let net_config = FullNetworkConfiguration::<_, _, Net>::new(&parachain_config.network);
+	let net_config = FullNetworkConfiguration::<_, _, Net>::new(
+		&parachain_config.network,
+		parachain_config
+			.prometheus_config
+			.as_ref()
+			.map(|cfg| cfg.registry.clone()),
+	);
 
 	let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
 		cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
@@ -1196,7 +1202,13 @@ where
 		));
 	};
 
-	let net_config = FullNetworkConfiguration::<_, _, Net>::new(&config.network);
+	let net_config = FullNetworkConfiguration::<_, _, Net>::new(
+		&config.network,
+		config
+			.prometheus_config
+			.as_ref()
+			.map(|cfg| cfg.registry.clone()),
+	);
 
 	let metrics = Net::register_notification_metrics(
 		config.prometheus_config.as_ref().map(|cfg| &cfg.registry),

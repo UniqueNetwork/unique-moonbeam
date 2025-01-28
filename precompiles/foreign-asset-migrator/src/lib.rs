@@ -90,12 +90,13 @@ where
 		// Get N account ids
 		// IMPORTANT: we can't mutate storage while iterating, that's why we collect N accounts ids
 		// in a Vec BEFORE processing them!
-		let accounts_ids =
-			pallet_assets::pallet::Account::<Runtime, ForeignAssetInstance>::iter_key_prefix(
-				new_asset_id,
-			)
-			.take(n as usize)
-			.collect::<sp_std::vec::Vec<_>>();
+		//TODO: fix private Account issue
+		let accounts_ids = sp_std::vec::Vec::<Runtime::AccountId>::new();
+		// pallet_assets::pallet::Account::<Runtime, ForeignAssetInstance>::iter_key_prefix(
+		// 	new_asset_id,
+		// )
+		// .take(n as usize)
+		// .collect::<sp_std::vec::Vec<_>>();
 
 		// Refound gas if there is less than N accounts
 		if accounts_ids.len() < n as usize {
