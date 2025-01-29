@@ -28,7 +28,6 @@ use frame_support::traits::tokens::asset_ops::common_strategies::{DeriveAndRepor
 use frame_support::traits::tokens::asset_ops::{
 	common_strategies::FromTo, AssetDefinition, Create, Transfer as AssetTransfer,
 };
-use frame_support::traits::EnsureOrigin;
 use frame_support::{
 	ensure, parameter_types,
 	traits::{EitherOfDiverse, Everything, Nothing, PalletInfoAccess, TransformOrigin},
@@ -69,7 +68,7 @@ use xcm::latest::prelude::{
 };
 
 use xcm_executor::traits::{
-	CallDispatcher, ConvertLocation, DropAssets, Error as MatchError, JustTry, MatchesInstance,
+	CallDispatcher, ConvertLocation, Error as MatchError, JustTry, MatchesInstance,
 };
 
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
@@ -441,7 +440,7 @@ impl xcm_executor::Config for XcmExecutorConfig {
 	type Trader = pallet_xcm_weight_trader::Trader<Runtime>;
 	type ResponseHandler = PolkadotXcm;
 	type SubscriptionService = PolkadotXcm;
-	type AssetTrap = NftTrapWrapper;
+	type AssetTrap = pallet_erc20_xcm_bridge::AssetTrapWrapper<PolkadotXcm, Runtime>;
 	type AssetClaims = PolkadotXcm;
 	type CallDispatcher = MoonbeamCall;
 	type PalletInstancesInfo = crate::AllPalletsWithSystem;
@@ -905,11 +904,8 @@ pub struct EvmNftShim;
 
 impl EvmNftShim {
 	const NFT_TRANSFER_CALL_DATA_SIZE: usize = 4 + 32 + 32 + 32; // selector + from + to + token_id
-	const NFT_CREATE_CALL_DATA_SIZE: usize = 4 + 32 + 32; // selector + to + token_id
 	const NFT_TRANSFER_SELECTOR: [u8; 4] = hex!("23b872dd");
-	const NFT_CREATE_SELECTOR: [u8; 4] = hex!("aab38592");
 	const NFT_OWNER_OF_CALL_DATA_SIZE: usize = 4 + 32; // selector + token_id
-	const NFT_OWNER_OF_SELECTOR: [u8; 4] = hex!("6352211e"); //ownerOf(uint256)
 	const NFT_MINT_INTO_CALL_DATA_SIZE: usize = 4 + 32 + 32; // selector + token_id
 }
 
@@ -1188,41 +1184,6 @@ impl MatchesInstance<FullNftId> for NftMatcher {
 
 pub type NftTransactor =
 	UniqueInstancesAdapter<AccountId, LocationToAccountId, NftMatcher, StashableNfts>;
-
-/// Morph a given `DropAssets` implementation into one which filter out erc20 assets.
-pub struct NftTrapWrapper;
-
-// Morph a given `DropAssets` implementation into one which filter out erc20 assets.
-impl DropAssets for NftTrapWrapper {
-	fn drop_assets(
-		origin: &xcm::latest::Location,
-		mut assets: xcm_executor::AssetsInHolding,
-		context: &xcm::latest::XcmContext,
-	) -> xcm::latest::Weight {
-		log::info!("TEST NftTrapWrapper drop_assets");
-		// Remove all erc20 assets
-		let assets_to_remove: Vec<_> = assets
-			.non_fungible_assets_iter()
-			.filter_map(|multiasset| {
-				NftMatcher::matches_instance(&multiasset)
-					.is_ok()
-					.then_some(multiasset.id)
-			})
-			.collect();
-		for id in assets_to_remove {
-			log::info!("TEST NftTrapWrapper drop_assets remove {:?}", id);
-			assets.saturating_take(xcm::latest::AssetFilter::Wild(
-				xcm::latest::WildAsset::AllOf {
-					fun: WildFungible,
-					id,
-				},
-			));
-		}
-		pallet_erc20_xcm_bridge::AssetTrapWrapper::<PolkadotXcm, Runtime>::drop_assets(
-			origin, assets, context,
-		)
-	}
-}
 
 #[cfg(feature = "runtime-benchmarks")]
 mod testing {

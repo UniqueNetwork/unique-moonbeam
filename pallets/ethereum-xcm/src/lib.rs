@@ -360,7 +360,7 @@ impl<T: Config> Pallet<T> {
 			// We only validate the gas limit against the evm transaction cost.
 			// No need to validate fee payment, as it is handled by the xcm executor.
 			.validate_common()
-			.map_err(|e| {
+			.map_err(|_| {
 				log::info!("TEST validate_and_apply error {block_gas_limit}");
 				sp_runtime::DispatchErrorWithPostInfo {
 					post_info: PostDispatchInfo {

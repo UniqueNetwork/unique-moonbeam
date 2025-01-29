@@ -284,7 +284,7 @@ pub mod pallet {
 
 		pub fn asset_id_by_location(location: &Location) -> Option<AssetId> {
 			//TODO: handle asset_status
-			let (asset_id, asset_status) = AssetsByLocation::<T>::get(location)?;
+			let (asset_id, _asset_status) = AssetsByLocation::<T>::get(location)?;
 			Some(asset_id)
 		}
 

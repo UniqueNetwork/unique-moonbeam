@@ -9,7 +9,7 @@ name = "moonriver-runtime"
 version = "0.8.4"
 
 [dependencies]
-hex-literal = { workspace = true, optional = true }
+hex-literal = { workspace = true }
 log = { workspace = true }
 num_enum = { workspace = true }
 rlp = { workspace = true, optional = true }
@@ -341,7 +341,6 @@ runtime-benchmarks = [
 	"frame-support/runtime-benchmarks",
 	"frame-system-benchmarking/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
-	"hex-literal",
 	"moonbeam-relay-encoder/runtime-benchmarks",
 	"moonbeam-runtime-common/runtime-benchmarks",
 	"moonbeam-xcm-benchmarks/runtime-benchmarks",
