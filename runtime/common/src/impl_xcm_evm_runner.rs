@@ -129,21 +129,56 @@ macro_rules! impl_evm_runner_precompile_or_eth_xcm {
 			}
 
 			fn create(
-				_source: H160,
-				_init: Vec<u8>,
-				_value: U256,
-				_gas_limit: u64,
+				source: H160,
+				init: Vec<u8>,
+				value: U256,
+				gas_limit: u64,
 				_max_fee_per_gas: Option<U256>,
 				_max_priority_fee_per_gas: Option<U256>,
 				_nonce: Option<U256>,
-				_access_list: Vec<(H160, Vec<H256>)>,
+				access_list: Vec<(H160, Vec<H256>)>,
 				_is_transactional: bool,
 				_validate: bool,
 				_weight_limit: Option<Weight>,
 				_transaction_len: Option<u64>,
 				_config: &fp_evm::Config,
 			) -> Result<fp_evm::CreateInfo, RunnerError<Self::Error>> {
-				unimplemented!()
+				let xcm_transaction = EthereumXcmTransaction::V2(EthereumXcmTransactionV2 {
+					gas_limit: gas_limit.into(),
+					action: pallet_ethereum_xcm::TransactionAction::Create,
+					value,
+					input: init.try_into().map_err(|_| RunnerError {
+						error: DispatchError::Exhausted,
+						weight: Default::default(),
+					})?,
+					access_list: Some(access_list),
+				});
+
+				let mut execution_info: Option<CallOrCreateInfo> = None;
+				pallet_ethereum::catch_exec_info(&mut execution_info, || {
+					CallDispatcher::dispatch(
+						RuntimeCall::EthereumXcm(pallet_ethereum_xcm::Call::force_transact_as {
+							transact_as: source,
+							xcm_transaction,
+							force_create_address: None,
+						}),
+						RawOrigin::Root.into(),
+					)
+					.map_err(|DispatchErrorWithPostInfo { error, .. }| RunnerError {
+						error,
+						weight: Default::default(),
+					})
+				})?;
+
+				if let Some(CallOrCreateInfo::Create(create_info))= execution_info {
+					Ok(create_info)
+				} else {
+					// `execution_info` must have been filled in
+					Err(RunnerError {
+						error: DispatchError::Unavailable,
+						weight: Default::default(),
+					})
+				}
 			}
 
 			fn create2(

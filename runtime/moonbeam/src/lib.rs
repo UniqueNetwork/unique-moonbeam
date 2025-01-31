@@ -46,8 +46,11 @@ use frame_support::{
 	parameter_types,
 	traits::{
 		fungible::{Balanced, Credit, HoldConsideration, Inspect},
-		tokens::imbalance::ResolveTo,
-		tokens::{PayFromAccount, UnityAssetBalanceConversion},
+		tokens::{
+			asset_ops::{Create, CreateStrategy},
+			imbalance::ResolveTo,
+			PayFromAccount, UnityAssetBalanceConversion,
+		},
 		ConstBool, ConstU128, ConstU16, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
 		EqualPrivilegeOnly, Imbalance, InstanceFilter, LinearStoragePrice, OnFinalize,
 		OnUnbalanced,
@@ -58,7 +61,7 @@ use frame_support::{
 	},
 	PalletId,
 };
-use frame_system::{EnsureRoot, EnsureSigned};
+use frame_system::{EnsureNever, EnsureRoot, EnsureSigned};
 pub use moonbeam_core_primitives::{
 	AccountId, AccountIndex, Address, AssetId, Balance, BlockNumber, DigestItem, Hash, Header,
 	Index, Signature,
@@ -80,6 +83,8 @@ pub use pallet_parachain_staking::{weights::WeightInfo, InflationInfo, Range};
 use pallet_transaction_payment::{FungibleAdapter, Multiplier, TargetedFeeAdjustment};
 use pallet_treasury::TreasuryAccountId;
 use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
+use precompile_utils::prelude::*;
+use precompile_utils_macro::Codec;
 use scale_info::TypeInfo;
 use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
@@ -104,6 +109,8 @@ use xcm_runtime_apis::{
 	dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
 	fees::Error as XcmPaymentApiError,
 };
+
+use parachains_common::CollectionId;
 
 use runtime_params::*;
 
@@ -1408,8 +1415,135 @@ impl pallet_randomness::Config for Runtime {
 	type WeightInfo = moonbeam_weights::pallet_randomness::WeightInfo<Runtime>;
 }
 
+#[derive(Clone, Encode, Eq, Debug, Decode, MaxEncodedLen, PartialEq, TypeInfo)]
+pub enum InstanceVariant {
+	Index,
+	Array4,
+	Array8,
+	Array16,
+	Array32,
+}
+
+#[derive(Clone, Encode, Eq, Debug, Decode, MaxEncodedLen, PartialEq, TypeInfo)]
+pub struct DerivativeCollectionInfo {
+	pub contract_addr: AccountId,          // derivative contract address
+	pub instance_variant: InstanceVariant, // XCM `AssetInstance` variant used by the original collection
+}
+
+impl pallet_derivatives::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+
+	type Original = xcm::latest::AssetId;
+	type Derivative = DerivativeCollectionInfo;
+
+	type DerivativeExtra = ();
+	type ExtrinsicsConfig = DerivativeCollectionsExtrinsics;
+}
+
+#[derive(Encode, Debug, Decode, TypeInfo, Clone, PartialEq, Eq)]
+pub struct DerivativeNftParams {
+	symbol: scale_info::prelude::string::String,
+	token_name: scale_info::prelude::string::String,
+}
+
+impl CreateStrategy for DerivativeNftParams {
+	type Success = DerivativeCollectionInfo;
+}
+
+#[derive(Encode, Debug, Decode, TypeInfo, Clone, PartialEq, Eq)]
+pub struct DerivativeCollectionsExtrinsics;
+impl pallet_derivatives::ExtrinsicsConfig<RuntimeOrigin, DerivativeCollectionInfo>
+	for DerivativeCollectionsExtrinsics
+{
+	type CreateOrigin = EnsureRoot<AccountId>;
+	type DestroyOrigin = EnsureNever<()>;
+
+	type DerivativeCreateParams = DerivativeNftParams;
+
+	type DerivativeCreateOp = DerivativeCreate;
+	type DerivativeDestroyOp = pallet_derivatives::DerivativeAlwaysErrOps<DerivativeCollectionInfo>;
+
+	type WeightInfo = moonbeam_weights::pallet_derivatives::WeightInfo;
+}
+
 impl pallet_root_testing::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
+}
+
+#[derive(Codec)]
+#[cfg_attr(test, derive(Debug))]
+struct ForeignNftConstructorArgs {
+	owner: precompile_utils::solidity::codec::native::Address,
+	symbol: BoundedString<ConstU32<64>>,
+	token_name: BoundedString<ConstU32<256>>,
+}
+
+pub struct DerivativeCreate;
+
+impl Create<DerivativeNftParams> for DerivativeCreate {
+	fn create(
+		params: DerivativeNftParams,
+	) -> Result<DerivativeCollectionInfo, sp_runtime::DispatchError> {
+		// Get init code
+		let mut init = Vec::new();
+		init.extend_from_slice(include_bytes!("../resources/foreign_nft_initcode.bin"));
+
+		// Add constructor parameters
+		let args = ForeignNftConstructorArgs {
+			owner: EvmForeignAssets::account_id().into(),
+			symbol: params.symbol.into(),
+			token_name: params.token_name.into(),
+		};
+		let encoded_args = precompile_utils::solidity::codec::Writer::new()
+			.write(args)
+			.build();
+		// Skip size of constructor args (32 bytes)
+		init.extend_from_slice(&encoded_args[32..]);
+
+		log::info!("TEST EvmForeignAssets nft_create");
+
+		let gas_limit = 3_500_000;
+
+		let exec_info = crate::xcm_config::EvmRunnerPrecompileOrEthXcm::<
+			crate::xcm_config::MoonbeamCall,
+			Runtime,
+		>::create(
+			EvmForeignAssets::account_id(),
+			init,
+			U256::default(),
+			gas_limit,
+			None,
+			None,
+			None,
+			Default::default(),
+			false,
+			false,
+			None,
+			None,
+			&<Runtime as pallet_evm::Config>::config(),
+		)
+		.map_err(|_| sp_runtime::DispatchError::Other("Nft contract deployment fail"))?;
+		log::info!("TEST EvmForeignAssets nft_create deployed");
+
+		ensure!(
+			matches!(
+				exec_info.exit_reason,
+				pallet_evm::ExitReason::Succeed(
+					pallet_evm::ExitSucceed::Returned | pallet_evm::ExitSucceed::Stopped
+				)
+			),
+			sp_runtime::DispatchError::Other("Nft contract deployment bad exit reason")
+		);
+
+		log::info!(
+			"TEST EvmForeignAssets nft_create deployed to {}",
+			exec_info.value
+		);
+		Ok(DerivativeCollectionInfo {
+			contract_addr: exec_info.value.into(),
+			instance_variant: InstanceVariant::Index,
+		})
+	}
 }
 
 parameter_types! {
@@ -1537,6 +1671,9 @@ construct_runtime! {
 
 		// Randomness
 		Randomness: pallet_randomness::{Pallet, Call, Storage, Event<T>, Inherent} = 120,
+
+		// Derivatives
+		DerivativeNfts: pallet_derivatives::{Pallet, Call, Storage, Event<T>} = 131,
 	}
 }
 

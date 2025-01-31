@@ -47,8 +47,8 @@ use frame_system::{EnsureRoot, RawOrigin};
 use sp_core::{ConstU32, H160, H256};
 
 use xcm_builder::unique_instances::{
-	NonFungibleAsset, RestoreOnCreate, SimpleStash, StashOnDestroy, UniqueInstancesAdapter,
-	UniqueInstancesDepositAdapter, UniqueInstancesOps,
+	DerivativesRegistry, NonFungibleAsset, RestoreOnCreate, SimpleStash, StashOnDestroy,
+	UniqueInstancesAdapter, UniqueInstancesDepositAdapter, UniqueInstancesOps,
 };
 
 use xcm_builder::{
@@ -62,9 +62,9 @@ use xcm_builder::{
 
 use parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling};
 use xcm::latest::prelude::{
-	AllOf, Asset, AssetFilter, AssetInstance, Fungibility::NonFungible, GlobalConsensus, Index,
-	InteriorLocation, Junction, Junction::AccountKey20, Location, NetworkId, PalletInstance,
-	Parachain, Wild, WildFungible,
+	AllOf, Array16, Array32, Array4, Array8, Asset, AssetFilter, AssetInstance,
+	Fungibility::NonFungible, GlobalConsensus, Index, InteriorLocation, Junction,
+	Junction::AccountKey20, Location, NetworkId, PalletInstance, Parachain, Wild, WildFungible,
 };
 
 use xcm_executor::traits::{
@@ -981,7 +981,7 @@ impl Create<Owned<AccountId, DeriveAndReportId<NonFungibleAsset, FullNftId>>> fo
 		let (asset_id, asset_instance) = id_assignment.params;
 
 		let full_nft_id @ (contract_addr, nft_id) =
-			try_get_full_derivative_nft_id(&asset_id.0, &asset_instance)?;
+			try_get_full_derivative_nft_id(&asset_id, &asset_instance)?;
 
 		log::info!("TEST EvmNftShim create input {full_nft_id:?}");
 		let mut input = Vec::with_capacity(Self::NFT_MINT_INTO_CALL_DATA_SIZE);
@@ -1121,24 +1121,26 @@ type StashableNfts =
 	UniqueInstancesOps<RestoreOnCreate<NftStash>, EvmNftShim, StashOnDestroy<NftStash>>;
 
 fn try_get_full_derivative_nft_id(
-	location: &Location,
+	asset_id: &xcm::latest::AssetId,
 	instance: &AssetInstance,
 ) -> Result<FullNftId, DispatchError> {
-	log::info!("TEST try_get_full_derivative_nft_id start");
-	let foreign_asset_id = EvmForeignAssets::asset_id_by_location(location)
-		.ok_or(DispatchError::Other("Foreign NFT not found"))?;
-	log::info!("TEST try_get_full_derivative_nft_id foreign_asset_id");
-	let contract_addr = EvmForeignAssets::contract_address_from_asset_id(foreign_asset_id);
+	let collection_info = crate::DerivativeNfts::get_derivative(asset_id)
+		.ok_or(pallet_derivatives::Error::<Runtime>::DerivativeNotFound)?;
 
-	let nft_id = match instance {
+	let nft_id = match (instance, collection_info.instance_variant) {
 		// NOTE: the actual conversions might differ in your implementation.
-		Index(id) => *id,
+		(Index(id), crate::InstanceVariant::Index) => U256::from(*id),
+		(Array4(id), crate::InstanceVariant::Array4) => U256::from_big_endian(id),
+		(Array8(id), crate::InstanceVariant::Array8) => U256::from_big_endian(id),
+		(Array16(id), crate::InstanceVariant::Array16) => U256::from_big_endian(id),
+		(Array32(id), crate::InstanceVariant::Array32) => U256::from_big_endian(id),
 
-		_ => return Err(DispatchError::Other("Foreign NFT not found")),
+		_ => return Err(pallet_derivatives::Error::<Runtime>::DerivativeNotFound.into()),
 	};
-	log::info!("TEST try_get_full_derivative_nft_id nft_id");
 
-	Ok((contract_addr.into(), nft_id.into()))
+	let contract_addr = collection_info.contract_addr;
+
+	Ok((contract_addr, nft_id))
 }
 
 pub struct NftMatcher;
@@ -1159,12 +1161,12 @@ impl MatchesInstance<FullNftId> for NftMatcher {
 					}],
 				),
 				&NonFungible(Index(nft_id)),
-			) if EvmForeignAssets::asset_id_by_location(&asset.id.0).is_none() => {
+			) if crate::DerivativeNfts::get_derivative(&asset.id).is_none() => {
 				log::info!("TEST nft-xcm-bridge matched");
 				Ok((contract_addr.into(), nft_id.into()))
 			}
 			(_, NonFungible(asset_instance)) => {
-				let full_nft_id = try_get_full_derivative_nft_id(&asset.id.0, asset_instance)
+				let full_nft_id = try_get_full_derivative_nft_id(&asset.id, asset_instance)
 					.map_err(|_| MatchError::AssetNotHandled)?;
 
 				log::info!("TEST foreign nft asset found");

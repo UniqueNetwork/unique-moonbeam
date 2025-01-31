@@ -88,6 +88,7 @@ pallet-assets = { workspace = true }
 pallet-balances = { workspace = true, features = ["insecure_zero_ed"] }
 pallet-collective = { workspace = true }
 pallet-conviction-voting = { workspace = true }
+pallet-derivatives = { workspace = true }
 pallet-identity = { workspace = true }
 pallet-multisig = { workspace = true }
 pallet-preimage = { workspace = true }
@@ -138,6 +139,7 @@ pallet-evm-precompile-modexp = { workspace = true }
 pallet-evm-precompile-sha3fips = { workspace = true }
 pallet-evm-precompile-simple = { workspace = true }
 precompile-utils = { workspace = true }
+precompile-utils-macro = { workspace = true }
 
 # Polkadot / XCM
 pallet-xcm = { workspace = true }
@@ -237,6 +239,7 @@ std = [
 	"pallet-balances/std",
 	"pallet-collective/std",
 	"pallet-conviction-voting/std",
+	"pallet-derivatives/std",
 	"pallet-crowdloan-rewards/std",
 	"pallet-emergency-para-xcm/std",
 	"pallet-erc20-xcm-bridge/std",
@@ -295,6 +298,7 @@ std = [
 	"parachains-common/std",
 	"parity-scale-codec/std",
 	"precompile-utils/std",
+	"precompile-utils/testing",
 	"scale-info/std",
 	"session-keys-primitives/std",
 	"sp-api/std",
@@ -350,6 +354,7 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-collective/runtime-benchmarks",
 	"pallet-conviction-voting/runtime-benchmarks",
+	"pallet-derivatives/runtime-benchmarks",
 	"pallet-crowdloan-rewards/runtime-benchmarks",
 	"pallet-ethereum-xcm/runtime-benchmarks",
 	"pallet-ethereum/runtime-benchmarks",
@@ -402,6 +407,7 @@ try-runtime = [
 	"pallet-balances/try-runtime",
 	"pallet-collective/try-runtime",
 	"pallet-conviction-voting/try-runtime",
+	"pallet-derivatives/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-moonbeam-lazy-migrations/try-runtime",

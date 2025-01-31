@@ -198,6 +198,8 @@ substrate-fixed = { git = "https://github.com/encointer/substrate-fixed", defaul
 # Substrate (client)
 frame-benchmarking-cli = { git = "https://github.com/UniqueNetwork/polkadot-sdk", branch = "moonbeam-xcm-nft-dev-env" }
 pallet-transaction-payment-rpc = { git = "https://github.com/UniqueNetwork/polkadot-sdk", branch = "moonbeam-xcm-nft-dev-env" }
+pallet-derivatives = { git = "https://github.com/UniqueNetwork/polkadot-sdk", branch = "moonbeam-xcm-nft-dev-env", default-features = false }
+pallet-nfts = { git = "https://github.com/UniqueNetwork/polkadot-sdk", branch = "moonbeam-xcm-nft-dev-env", default-features = false }
 sc-basic-authorship = { git = "https://github.com/UniqueNetwork/polkadot-sdk", branch = "moonbeam-xcm-nft-dev-env" }
 sc-block-builder = { git = "https://github.com/UniqueNetwork/polkadot-sdk", branch = "moonbeam-xcm-nft-dev-env" }
 sc-chain-spec = { git = "https://github.com/UniqueNetwork/polkadot-sdk", branch = "moonbeam-xcm-nft-dev-env" }
