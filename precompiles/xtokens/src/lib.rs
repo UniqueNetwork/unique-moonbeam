@@ -479,7 +479,6 @@ where
 	}
 
 	fn nft_to_asset(asset: NftEvmAsset) -> Result<Asset, Revert> {
-		assert_eq!(asset.location.parents, 0);
 		Ok(Asset {
 			fun: Fungibility::NonFungible(asset.nft_id),
 			id: AssetId(asset.location),
