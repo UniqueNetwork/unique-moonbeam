@@ -187,10 +187,6 @@ where
 		weight: u64,
 	) -> EvmResult {
 		let origin = Runtime::AddressMapping::into_account_id(handle.context().caller);
-		log::info!(
-			"TEST transfer_multi_assets origin {origin:?} caller {:?}",
-			handle.context().caller
-		);
 		let to_balance = amount
 			.try_into()
 			.map_err(|_| RevertReason::value_is_too_large("balance type").in_field("amount"))?;

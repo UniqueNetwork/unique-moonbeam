@@ -75,29 +75,22 @@ impl<ForeignAsset> ForeignAssetCreatedHook<ForeignAsset> for () {
 
 pub(crate) struct ForeignAssetsMatcher<T>(core::marker::PhantomData<T>);
 
-enum MatchedAsset {
-	Fungible(U256),
-	NonFungible(U256),
-}
-
 impl<T: crate::Config> ForeignAssetsMatcher<T> {
-	fn match_asset(asset: &Asset) -> Result<(H160, MatchedAsset, AssetStatus), MatchError> {
-		log::info!("TEST moonbeam match_asset");
-		let XcmAssetId(ref location) = &asset.id;
-
-		let Some((asset_id, asset_status)) = AssetsByLocation::<T>::get(&location) else {
-			return Err(MatchError::AssetNotHandled);
+	fn match_asset(asset: &Asset) -> Result<(H160, U256, AssetStatus), MatchError> {
+		let (amount, location) = match (&asset.fun, &asset.id) {
+			(Fungibility::Fungible(ref amount), XcmAssetId(ref location)) => (amount, location),
+			_ => return Err(MatchError::AssetNotHandled),
 		};
 
-		let asset_id = Pallet::<T>::contract_address_from_asset_id(asset_id);
-
-		let data = match asset.fun {
-			Fungibility::Fungible(amount) => MatchedAsset::Fungible(U256::from(amount)),
-			Fungibility::NonFungible(asset_instance) => MatchedAsset::NonFungible(U256::from(
-				u128::try_from(asset_instance).map_err(|_| MatchError::AssetNotHandled)?,
-			)),
-		};
-		Ok((asset_id, data, asset_status))
+		if let Some((asset_id, asset_status)) = AssetsByLocation::<T>::get(&location) {
+			Ok((
+				Pallet::<T>::contract_address_from_asset_id(asset_id),
+				U256::from(*amount),
+				asset_status,
+			))
+		} else {
+			Err(MatchError::AssetNotHandled)
+		}
 	}
 }
 
@@ -181,7 +174,6 @@ pub mod pallet {
 		CorruptedStorageOrphanLocation,
 		//Erc20ContractCallFail,
 		Erc20ContractCreationFail,
-		NftContractCreationFail,
 		EvmCallPauseFail,
 		EvmCallUnpauseFail,
 		EvmInternalError,
@@ -243,7 +235,7 @@ pub mod pallet {
 
 		/// Compute asset contract address from asset id
 		#[inline]
-		pub fn contract_address_from_asset_id(asset_id: AssetId) -> H160 {
+		pub(crate) fn contract_address_from_asset_id(asset_id: AssetId) -> H160 {
 			let mut buffer = [0u8; 20];
 			buffer[..4].copy_from_slice(&FOREIGN_ASSETS_PREFIX);
 			buffer[4..].copy_from_slice(&asset_id.to_be_bytes());
@@ -281,16 +273,6 @@ pub mod pallet {
 			AssetsByLocation::<T>::insert(&asset_location, (asset_id, AssetStatus::Active));
 			AssetsById::<T>::insert(&asset_id, asset_location);
 		}
-
-		pub fn asset_id_by_location(location: &Location) -> Option<AssetId> {
-			//TODO: handle asset_status
-			let (asset_id, _asset_status) = AssetsByLocation::<T>::get(location)?;
-			Some(asset_id)
-		}
-
-		pub fn location_by_asset_id(asset_id: &AssetId) -> Option<Location> {
-			AssetsById::<T>::get(asset_id)
-		}
 	}
 
 	#[pallet::call]
@@ -306,10 +288,8 @@ pub mod pallet {
 			symbol: BoundedVec<u8, ConstU32<256>>,
 			name: BoundedVec<u8, ConstU32<256>>,
 		) -> DispatchResult {
-			log::info!("TEST create_foreign_asset start");
 			T::ForeignAssetCreatorOrigin::ensure_origin(origin)?;
 
-			log::info!("TEST create_foreign_asset checks");
 			// Ensure such an assetId does not exist
 			ensure!(
 				!AssetsById::<T>::contains_key(&asset_id),
@@ -331,7 +311,6 @@ pub mod pallet {
 				Error::<T>::AssetIdFiltered
 			);
 
-			log::info!("TEST create_foreign_asset call evm");
 			let symbol = core::str::from_utf8(&symbol).map_err(|_| Error::<T>::InvalidSymbol)?;
 			let name = core::str::from_utf8(&name).map_err(|_| Error::<T>::InvalidTokenName)?;
 
@@ -342,7 +321,6 @@ pub mod pallet {
 			AssetsById::<T>::insert(&asset_id, &xcm_location);
 			AssetsByLocation::<T>::insert(&xcm_location, (asset_id, AssetStatus::Active));
 
-			log::info!("TEST create_foreign_asset emit events");
 			T::OnForeignAssetCreated::on_asset_created(&xcm_location, &asset_id);
 
 			Self::deposit_event(Event::ForeignAssetCreated {
@@ -350,7 +328,6 @@ pub mod pallet {
 				asset_id,
 				xcm_location,
 			});
-			log::info!("TEST create_foreign_asset finish");
 			Ok(())
 		}
 
@@ -455,62 +432,6 @@ pub mod pallet {
 			});
 			Ok(())
 		}
-
-		#[pallet::call_index(4)]
-		#[pallet::weight(<T as Config>::WeightInfo::create_foreign_asset())]
-		pub fn create_foreign_nft_asset(
-			origin: OriginFor<T>,
-			asset_id: AssetId,
-			xcm_location: Location,
-			symbol: BoundedVec<u8, ConstU32<256>>,
-			name: BoundedVec<u8, ConstU32<256>>,
-		) -> DispatchResult {
-			log::info!("TEST create_foreign_nft_asset start");
-			T::ForeignAssetCreatorOrigin::ensure_origin(origin)?;
-
-			// Ensure such an assetId does not exist
-			ensure!(
-				!AssetsById::<T>::contains_key(&asset_id),
-				Error::<T>::AssetAlreadyExists
-			);
-
-			ensure!(
-				!AssetsByLocation::<T>::contains_key(&xcm_location),
-				Error::<T>::LocationAlreadyExists
-			);
-
-			ensure!(
-				AssetsById::<T>::count() < T::MaxForeignAssets::get(),
-				Error::<T>::TooManyForeignAssets
-			);
-
-			ensure!(
-				T::AssetIdFilter::contains(&asset_id),
-				Error::<T>::AssetIdFiltered
-			);
-
-			log::info!("TEST create_foreign_nft_asset after checks");
-			let symbol = core::str::from_utf8(&symbol).map_err(|_| Error::<T>::InvalidSymbol)?;
-			let name = core::str::from_utf8(&name).map_err(|_| Error::<T>::InvalidTokenName)?;
-
-			let contract_address = EvmCaller::<T>::nft_create(asset_id, symbol, name)?;
-
-			log::info!("TEST create_foreign_nft_asset nft created");
-			// Insert the association assetId->foreigAsset
-			// Insert the association foreigAsset->assetId
-			AssetsById::<T>::insert(&asset_id, &xcm_location);
-			AssetsByLocation::<T>::insert(&xcm_location, (asset_id, AssetStatus::Active));
-
-			T::OnForeignAssetCreated::on_asset_created(&xcm_location, &asset_id);
-
-			Self::deposit_event(Event::ForeignAssetCreated {
-				contract_address,
-				asset_id,
-				xcm_location,
-			});
-			log::info!("TEST create_foreign_nft_asset finished");
-			Ok(())
-		}
 	}
 
 	impl<T: Config> xcm_executor::traits::TransactAsset for Pallet<T> {
@@ -518,8 +439,7 @@ pub mod pallet {
 		// we have just traced from which account it should have been withdrawn.
 		// So we will retrieve these information and make the transfer from the origin account.
 		fn deposit_asset(what: &Asset, who: &Location, _context: Option<&XcmContext>) -> XcmResult {
-			log::info!("TEST moonbeam deposit_asset");
-			let (contract_address, data, asset_status) =
+			let (contract_address, amount, asset_status) =
 				ForeignAssetsMatcher::<T>::match_asset(what)?;
 
 			if let AssetStatus::FrozenXcmDepositForbidden = asset_status {
@@ -531,13 +451,8 @@ pub mod pallet {
 
 			// We perform the evm transfers in a storage transaction to ensure that if it fail
 			// any contract storage changes are rolled back.
-			frame_support::storage::with_storage_layer(|| match data {
-				MatchedAsset::Fungible(amount) => {
-					EvmCaller::<T>::erc20_mint_into(contract_address, beneficiary, amount)
-				}
-				MatchedAsset::NonFungible(nft_id) => {
-					EvmCaller::<T>::nft_mint_into(contract_address, beneficiary, nft_id)
-				}
+			frame_support::storage::with_storage_layer(|| {
+				EvmCaller::<T>::erc20_mint_into(contract_address, beneficiary, amount)
 			})?;
 
 			Ok(())
@@ -549,8 +464,7 @@ pub mod pallet {
 			to: &Location,
 			_context: &XcmContext,
 		) -> Result<AssetsInHolding, XcmError> {
-			log::info!("TEST moonbeam internal_transfer_asset");
-			let (contract_address, data, asset_status) =
+			let (contract_address, amount, asset_status) =
 				ForeignAssetsMatcher::<T>::match_asset(asset)?;
 
 			if let AssetStatus::FrozenXcmDepositForbidden | AssetStatus::FrozenXcmDepositAllowed =
@@ -567,13 +481,8 @@ pub mod pallet {
 
 			// We perform the evm transfers in a storage transaction to ensure that if it fail
 			// any contract storage changes are rolled back.
-			frame_support::storage::with_storage_layer(|| match data {
-				MatchedAsset::Fungible(amount) => {
-					EvmCaller::<T>::erc20_transfer(contract_address, from, to, amount)
-				}
-				MatchedAsset::NonFungible(nft_id) => {
-					EvmCaller::<T>::nft_transfer(contract_address, from, to, nft_id)
-				}
+			frame_support::storage::with_storage_layer(|| {
+				EvmCaller::<T>::erc20_transfer(contract_address, from, to, amount)
 			})?;
 
 			Ok(asset.clone().into())
@@ -591,8 +500,7 @@ pub mod pallet {
 			who: &Location,
 			_context: Option<&XcmContext>,
 		) -> Result<AssetsInHolding, XcmError> {
-			log::info!("TEST moonbeam withdraw_asset");
-			let (contract_address, data, asset_status) =
+			let (contract_address, amount, asset_status) =
 				ForeignAssetsMatcher::<T>::match_asset(what)?;
 			let who = T::XcmLocationToH160::convert_location(who)
 				.ok_or(MatchError::AccountIdConversionFailed)?;
@@ -605,13 +513,8 @@ pub mod pallet {
 
 			// We perform the evm transfers in a storage transaction to ensure that if it fail
 			// any contract storage changes are rolled back.
-			frame_support::storage::with_storage_layer(|| match data {
-				MatchedAsset::Fungible(amount) => {
-					EvmCaller::<T>::erc20_burn_from(contract_address, who, amount)
-				}
-				MatchedAsset::NonFungible(nft_id) => {
-					EvmCaller::<T>::nft_burn_from(contract_address, who, nft_id)
-				}
+			frame_support::storage::with_storage_layer(|| {
+				EvmCaller::<T>::erc20_burn_from(contract_address, who, amount)
 			})?;
 
 			Ok(what.clone().into())

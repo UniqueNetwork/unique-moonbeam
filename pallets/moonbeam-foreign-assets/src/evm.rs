@@ -40,8 +40,6 @@ const ERC20_PAUSE_GAS_LIMIT: u64 = 150_000; // highest failure: 149_500
 pub(crate) const ERC20_TRANSFER_GAS_LIMIT: u64 = 155_000; // highest failure: 154_000
 const ERC20_UNPAUSE_GAS_LIMIT: u64 = 150_000; // highest failure: 149_500
 
-const NFT_CREATE_GAS_LIMIT: u64 = 3_500_000;
-
 pub enum EvmError {
 	BurnFromFail,
 	ContractReturnInvalidValue,
@@ -86,14 +84,6 @@ impl From<EvmError> for XcmError {
 struct ForeignErc20ConstructorArgs {
 	owner: Address,
 	decimals: u8,
-	symbol: BoundedString<ConstU32<64>>,
-	token_name: BoundedString<ConstU32<256>>,
-}
-
-#[derive(Codec)]
-#[cfg_attr(test, derive(Debug))]
-struct ForeignNftConstructorArgs {
-	owner: Address,
 	symbol: BoundedString<ConstU32<64>>,
 	token_name: BoundedString<ConstU32<256>>,
 }
@@ -156,64 +146,6 @@ impl<T: crate::Config> EvmCaller<T> {
 		Ok(contract_adress)
 	}
 
-	/// Deploy foreign asset erc20 contract
-	pub(crate) fn nft_create(
-		asset_id: AssetId,
-		symbol: &str,
-		token_name: &str,
-	) -> Result<H160, Error<T>> {
-		// Get init code
-		let mut init = Vec::with_capacity(ERC20_CREATE_MAX_CALLDATA_SIZE);
-		init.extend_from_slice(include_bytes!("../resources/foreign_nft_initcode.bin"));
-
-		// Add constructor parameters
-		let args = ForeignNftConstructorArgs {
-			owner: Pallet::<T>::account_id().into(),
-			symbol: symbol.into(),
-			token_name: token_name.into(),
-		};
-		let encoded_args = precompile_utils::solidity::codec::Writer::new()
-			.write(args)
-			.build();
-		// Skip size of constructor args (32 bytes)
-		init.extend_from_slice(&encoded_args[32..]);
-
-		let contract_adress = Pallet::<T>::contract_address_from_asset_id(asset_id);
-		log::info!("TEST EvmForeignAssets nft_create {contract_adress}");
-
-		let exec_info = T::EvmRunner::create_force_address(
-			Pallet::<T>::account_id(),
-			init,
-			U256::default(),
-			NFT_CREATE_GAS_LIMIT,
-			None,
-			None,
-			None,
-			Default::default(),
-			false,
-			false,
-			None,
-			None,
-			&<T as pallet_evm::Config>::config(),
-			contract_adress,
-		)
-		.map_err(|e| {
-			log::info!("TEST nft_create {:?}", e.error.into());
-			Error::NftContractCreationFail
-		})?;
-		log::info!("TEST EvmForeignAssets nft_create deployed");
-
-		ensure!(
-			matches!(
-				exec_info.exit_reason,
-				ExitReason::Succeed(ExitSucceed::Returned | ExitSucceed::Stopped)
-			),
-			Error::NftContractCreationFail
-		);
-
-		Ok(contract_adress)
-	}
-
 	pub(crate) fn erc20_mint_into(
 		erc20_contract_address: H160,
 		beneficiary: H160,
@@ -233,51 +165,6 @@ impl<T: crate::Config> EvmCaller<T> {
 		let exec_info = T::EvmRunner::call(
 			Pallet::<T>::account_id(),
 			erc20_contract_address,
-			input,
-			U256::default(),
-			ERC20_MINT_INTO_GAS_LIMIT,
-			None,
-			None,
-			None,
-			Default::default(),
-			false,
-			false,
-			Some(weight_limit),
-			Some(0),
-			&<T as pallet_evm::Config>::config(),
-		)
-		.map_err(|_| EvmError::EvmCallFail)?;
-
-		ensure!(
-			matches!(
-				exec_info.exit_reason,
-				ExitReason::Succeed(ExitSucceed::Returned | ExitSucceed::Stopped)
-			),
-			EvmError::MintIntoFail
-		);
-
-		Ok(())
-	}
-
-	pub(crate) fn nft_mint_into(
-		nft_contract_address: H160,
-		beneficiary: H160,
-		nft_id: U256,
-	) -> Result<(), EvmError> {
-		let mut input = Vec::with_capacity(ERC20_CALL_MAX_CALLDATA_SIZE);
-		// Selector
-		input.extend_from_slice(&keccak256!("mintInto(address,uint256)")[..4]);
-		// append beneficiary address
-		input.extend_from_slice(H256::from(beneficiary).as_bytes());
-		// append nft_id to be minted
-		input.extend_from_slice(H256::from_uint(&nft_id).as_bytes());
-
-		let weight_limit: Weight =
-			T::GasWeightMapping::gas_to_weight(ERC20_MINT_INTO_GAS_LIMIT, true);
-
-		let exec_info = T::EvmRunner::call(
-			Pallet::<T>::account_id(),
-			nft_contract_address,
 			input,
 			U256::default(),
 			ERC20_MINT_INTO_GAS_LIMIT,
@@ -360,52 +247,6 @@ impl<T: crate::Config> EvmCaller<T> {
 		Ok(())
 	}
 
-	pub(crate) fn nft_transfer(
-		nft_contract_address: H160,
-		from: H160,
-		to: H160,
-		nft_id: U256,
-	) -> Result<(), EvmError> {
-		let mut input = Vec::with_capacity(ERC20_CALL_MAX_CALLDATA_SIZE);
-		// Selector
-		input.extend_from_slice(&keccak256!("transfer(address,uint256)")[..4]);
-		// append receiver address
-		input.extend_from_slice(H256::from(to).as_bytes());
-		// append nft_id to be transferred
-		input.extend_from_slice(H256::from_uint(&nft_id).as_bytes());
-
-		let weight_limit: Weight =
-			T::GasWeightMapping::gas_to_weight(ERC20_TRANSFER_GAS_LIMIT, true);
-
-		let exec_info = T::EvmRunner::call(
-			from,
-			nft_contract_address,
-			input,
-			U256::default(),
-			ERC20_TRANSFER_GAS_LIMIT,
-			None,
-			None,
-			None,
-			Default::default(),
-			false,
-			false,
-			Some(weight_limit),
-			Some(0),
-			&<T as pallet_evm::Config>::config(),
-		)
-		.map_err(|_| EvmError::EvmCallFail)?;
-
-		ensure!(
-			matches!(
-				exec_info.exit_reason,
-				ExitReason::Succeed(ExitSucceed::Returned | ExitSucceed::Stopped)
-			),
-			EvmError::TransferFail
-		);
-
-		Ok(())
-	}
-
 	pub(crate) fn erc20_burn_from(
 		erc20_contract_address: H160,
 		who: H160,
@@ -425,51 +266,6 @@ impl<T: crate::Config> EvmCaller<T> {
 		let exec_info = T::EvmRunner::call(
 			Pallet::<T>::account_id(),
 			erc20_contract_address,
-			input,
-			U256::default(),
-			ERC20_BURN_FROM_GAS_LIMIT,
-			None,
-			None,
-			None,
-			Default::default(),
-			false,
-			false,
-			Some(weight_limit),
-			Some(0),
-			&<T as pallet_evm::Config>::config(),
-		)
-		.map_err(|_| EvmError::EvmCallFail)?;
-
-		ensure!(
-			matches!(
-				exec_info.exit_reason,
-				ExitReason::Succeed(ExitSucceed::Returned | ExitSucceed::Stopped)
-			),
-			EvmError::BurnFromFail
-		);
-
-		Ok(())
-	}
-
-	pub(crate) fn nft_burn_from(
-		nft_contract_address: H160,
-		who: H160,
-		nft_id: U256,
-	) -> Result<(), EvmError> {
-		let mut input = Vec::with_capacity(ERC20_CALL_MAX_CALLDATA_SIZE);
-		// Selector
-		input.extend_from_slice(&keccak256!("burnFrom(address,uint256)")[..4]);
-		// append who address
-		input.extend_from_slice(H256::from(who).as_bytes());
-		// append nft_id to be burn
-		input.extend_from_slice(H256::from_uint(&nft_id).as_bytes());
-
-		let weight_limit: Weight =
-			T::GasWeightMapping::gas_to_weight(ERC20_BURN_FROM_GAS_LIMIT, true);
-
-		let exec_info = T::EvmRunner::call(
-			Pallet::<T>::account_id(),
-			nft_contract_address,
 			input,
 			U256::default(),
 			ERC20_BURN_FROM_GAS_LIMIT,

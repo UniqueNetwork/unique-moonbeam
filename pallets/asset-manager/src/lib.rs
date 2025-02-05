@@ -203,10 +203,8 @@ pub mod pallet {
 			min_amount: T::Balance,
 			is_sufficient: bool,
 		) -> DispatchResult {
-			log::info!("TEST AssetManager register_foreign_asset start");
 			T::ForeignAssetModifierOrigin::ensure_origin(origin)?;
 
-			log::info!("TEST AssetManager register_foreign_asset origin");
 			// Compute assetId from asset
 			let asset_id: T::AssetId = asset.clone().into();
 
@@ -215,7 +213,6 @@ pub mod pallet {
 				AssetIdType::<T>::get(&asset_id).is_none(),
 				Error::<T>::AssetAlreadyExists
 			);
-			log::info!("TEST AssetManager register_foreign_asset checks");
 			T::AssetRegistrar::create_foreign_asset(
 				asset_id,
 				min_amount,
@@ -233,7 +230,6 @@ pub mod pallet {
 				asset,
 				metadata,
 			});
-			log::info!("TEST AssetManager register_foreign_asset finish");
 			Ok(())
 		}
 

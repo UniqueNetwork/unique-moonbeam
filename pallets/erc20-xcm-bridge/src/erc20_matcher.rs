@@ -29,14 +29,12 @@ impl<Erc20MultilocationPrefix: Get<Location>> MatchesFungibles<H160, U256>
 	for Erc20Matcher<Erc20MultilocationPrefix>
 {
 	fn matches_fungibles(multiasset: &Asset) -> Result<(H160, U256), MatchError> {
-		log::info!("TEST matcher matches_fungibles asset {:?}", multiasset.id.0);
 		let (amount, id) = match (&multiasset.fun, &multiasset.id) {
 			(Fungible(ref amount), AssetId(ref id)) => (amount, id),
 			_ => return Err(MatchError::AssetNotHandled),
 		};
 		let contract_address = Self::matches_erc20_multilocation(id)
 			.map_err(|_| MatchError::AssetIdConversionFailed)?;
-		log::info!("TEST matcher matches_fungibles contract_address {contract_address}");
 		let amount = U256::from(*amount);
 
 		Ok((contract_address, amount))
@@ -45,16 +43,13 @@ impl<Erc20MultilocationPrefix: Get<Location>> MatchesFungibles<H160, U256>
 
 impl<Erc20MultilocationPrefix: Get<Location>> Erc20Matcher<Erc20MultilocationPrefix> {
 	pub(crate) fn is_erc20_asset(multiasset: &Asset) -> bool {
-		log::info!("TEST matcher is_erc20_asset");
 		match (&multiasset.fun, &multiasset.id) {
 			(Fungible(_), AssetId(ref id)) => Self::matches_erc20_multilocation(id).is_ok(),
 			_ => false,
 		}
 	}
 	fn matches_erc20_multilocation(multilocation: &Location) -> Result<H160, ()> {
-		log::info!("TEST matcher matches_erc20_multilocation");
 		let prefix = Erc20MultilocationPrefix::get();
-		log::info!("TEST matcher matches_erc20_multilocation {multilocation:?} prefix {prefix:?}");
 		if prefix.parent_count() != multilocation.parent_count()
 			|| prefix
 				.interior()
@@ -62,15 +57,6 @@ impl<Erc20MultilocationPrefix: Get<Location>> Erc20Matcher<Erc20MultilocationPre
 				.enumerate()
 				.any(|(index, junction)| multilocation.interior().at(index) != Some(junction))
 		{
-			log::info!(
-				"TEST matcher matches_erc20_multilocation error {} {}",
-				prefix.parent_count() != multilocation.parent_count(),
-				prefix
-					.interior()
-					.iter()
-					.enumerate()
-					.any(|(index, junction)| multilocation.interior().at(index) != Some(junction))
-			);
 			return Err(());
 		}
 		match multilocation.interior().at(prefix.interior().len()) {

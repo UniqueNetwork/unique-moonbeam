@@ -110,8 +110,6 @@ use xcm_runtime_apis::{
 	fees::Error as XcmPaymentApiError,
 };
 
-use parachains_common::CollectionId;
-
 use runtime_params::*;
 
 #[cfg(feature = "std")]
@@ -1444,6 +1442,7 @@ impl pallet_derivatives::Config for Runtime {
 pub struct DerivativeNftParams {
 	symbol: scale_info::prelude::string::String,
 	token_name: scale_info::prelude::string::String,
+	instance_variant: InstanceVariant,
 }
 
 impl CreateStrategy for DerivativeNftParams {
@@ -1500,8 +1499,6 @@ impl Create<DerivativeNftParams> for DerivativeCreate {
 		// Skip size of constructor args (32 bytes)
 		init.extend_from_slice(&encoded_args[32..]);
 
-		log::info!("TEST EvmForeignAssets nft_create");
-
 		let gas_limit = 3_500_000;
 
 		let exec_info = crate::xcm_config::EvmRunnerPrecompileOrEthXcm::<
@@ -1523,7 +1520,6 @@ impl Create<DerivativeNftParams> for DerivativeCreate {
 			&<Runtime as pallet_evm::Config>::config(),
 		)
 		.map_err(|_| sp_runtime::DispatchError::Other("Nft contract deployment fail"))?;
-		log::info!("TEST EvmForeignAssets nft_create deployed");
 
 		ensure!(
 			matches!(
@@ -1535,13 +1531,9 @@ impl Create<DerivativeNftParams> for DerivativeCreate {
 			sp_runtime::DispatchError::Other("Nft contract deployment bad exit reason")
 		);
 
-		log::info!(
-			"TEST EvmForeignAssets nft_create deployed to {}",
-			exec_info.value
-		);
 		Ok(DerivativeCollectionInfo {
 			contract_addr: exec_info.value.into(),
-			instance_variant: InstanceVariant::Index,
+			instance_variant: params.instance_variant,
 		})
 	}
 }

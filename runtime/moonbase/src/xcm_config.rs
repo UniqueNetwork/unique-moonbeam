@@ -26,33 +26,18 @@ use super::{
 use crate::OpenTechCommitteeInstance;
 use moonbeam_runtime_common::weights as moonbase_weights;
 use moonkit_xcm_primitives::AccountIdAssetIdConversion;
-use pallet_evm::GasWeightMapping;
 use sp_runtime::{
 	traits::{Hash as THash, MaybeEquivalence, PostDispatchInfoOf},
-	DispatchErrorWithPostInfo, DispatchResult,
+	DispatchErrorWithPostInfo,
 };
 
 use frame_support::{
-	ensure, parameter_types,
-	traits::{
-		tokens::asset_ops::{
-			common_strategies::{DeriveAndReportId, FromTo, Owned},
-			AssetDefinition, Create, Transfer as AssetTransfer,
-		},
-		EitherOfDiverse, Everything, Nothing, PalletInfoAccess, TransformOrigin,
-	},
+	parameter_types,
+	traits::{EitherOfDiverse, Everything, Nothing, PalletInfoAccess, TransformOrigin},
 };
 
-use fp_evm::{ExitReason, ExitSucceed};
 use frame_system::{EnsureRoot, RawOrigin};
-use hex_literal::hex;
 use sp_core::{ConstU32, H160, H256};
-
-use xcm_builder::unique_instances::{
-	NonFungibleAsset, RestoreOnCreate, SimpleStash, StashOnDestroy, UniqueInstancesAdapter,
-	UniqueInstancesDepositAdapter, UniqueInstancesOps,
-};
-
 use sp_weights::Weight;
 use xcm_builder::{
 	AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -66,14 +51,11 @@ use xcm_builder::{
 use parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling};
 
 use xcm::latest::prelude::{
-	AllOf, Asset, AssetFilter, AssetInstance, Fungibility::NonFungible, GlobalConsensus, Index,
-	InteriorLocation, Junction, Junction::AccountKey20, Location, NetworkId, PalletInstance,
-	Parachain, Wild, WildFungible,
+	AllOf, Asset, AssetFilter, GlobalConsensus, InteriorLocation, Junction, Location, NetworkId,
+	PalletInstance, Parachain, Wild, WildFungible,
 };
 
-use xcm_executor::traits::{
-	CallDispatcher, ConvertLocation, Error as MatchError, JustTry, MatchesInstance,
-};
+use xcm_executor::traits::{CallDispatcher, ConvertLocation, JustTry};
 
 use cumulus_primitives_core::{AggregateMessageOrigin, ParaId};
 use xcm_primitives::{
@@ -178,76 +160,6 @@ pub type LocalAssetTransactor = XcmCurrencyAdapter<
 	(),
 >;
 
-pub struct LocalAssetTransactorWrapper(LocalAssetTransactor);
-
-impl xcm_executor::traits::TransactAsset for LocalAssetTransactorWrapper {
-	fn can_check_in(
-		origin: &Location,
-		what: &Asset,
-		context: &xcm::latest::prelude::XcmContext,
-	) -> xcm::latest::prelude::XcmResult {
-		log::info!("TEST LocalAssetTransactorWrapper can_check_in {origin:?}");
-		LocalAssetTransactor::can_check_in(origin, what, context)
-	}
-
-	fn transfer_asset(
-		asset: &Asset,
-		from: &Location,
-		to: &Location,
-		context: &xcm::latest::prelude::XcmContext,
-	) -> Result<xcm_executor::AssetsInHolding, xcm::latest::prelude::XcmError> {
-		log::info!("TEST LocalAssetTransactorWrapper can_check_in {from:?}");
-		LocalAssetTransactor::transfer_asset(asset, from, to, context)
-	}
-
-	fn check_in(origin: &Location, what: &Asset, context: &xcm::latest::prelude::XcmContext) {
-		log::info!("TEST LocalAssetTransactorWrapper check_in {origin:?}");
-		LocalAssetTransactor::check_in(origin, what, context)
-	}
-
-	fn can_check_out(
-		dest: &Location,
-		what: &Asset,
-		context: &xcm::latest::prelude::XcmContext,
-	) -> xcm::latest::prelude::XcmResult {
-		log::info!("TEST LocalAssetTransactorWrapper check_in {dest:?}");
-		LocalAssetTransactor::can_check_out(dest, what, context)
-	}
-
-	fn check_out(dest: &Location, what: &Asset, context: &xcm::latest::prelude::XcmContext) {
-		log::info!("TEST LocalAssetTransactorWrapper check_out {dest:?}");
-		LocalAssetTransactor::check_out(dest, what, context)
-	}
-
-	fn deposit_asset(
-		what: &Asset,
-		who: &Location,
-		context: Option<&xcm::latest::prelude::XcmContext>,
-	) -> xcm::latest::prelude::XcmResult {
-		log::info!("TEST LocalAssetTransactorWrapper deposit_asset {who:?}");
-		LocalAssetTransactor::deposit_asset(what, who, context)
-	}
-
-	fn withdraw_asset(
-		what: &Asset,
-		who: &Location,
-		maybe_context: Option<&xcm::latest::prelude::XcmContext>,
-	) -> Result<xcm_executor::AssetsInHolding, xcm::latest::prelude::XcmError> {
-		log::info!("TEST LocalAssetTransactorWrapper withdraw_asset {who:?}");
-		LocalAssetTransactor::withdraw_asset(what, who, maybe_context)
-	}
-
-	fn internal_transfer_asset(
-		asset: &Asset,
-		from: &Location,
-		to: &Location,
-		context: &xcm::latest::prelude::XcmContext,
-	) -> Result<xcm_executor::AssetsInHolding, xcm::latest::prelude::XcmError> {
-		log::info!("TEST LocalAssetTransactorWrapper internal_transfer_asset {from:?}");
-		LocalAssetTransactor::internal_transfer_asset(asset, from, to, context)
-	}
-}
-
 // We use all transactors
 // These correspond to
 // SelfReserve asset, both pre and post 0.9.16
@@ -255,12 +167,10 @@ impl xcm_executor::traits::TransactAsset for LocalAssetTransactorWrapper {
 // We can remove the Old reanchor once
 // we import https://github.com/open-web3-stack/open-runtime-module-library/pull/708
 pub type AssetTransactors = (
-	LocalAssetTransactorWrapper,
+	LocalAssetTransactor,
 	EvmForeignAssets,
 	ForeignFungiblesTransactor,
 	Erc20XcmBridge,
-	NftTransactor,
-	DerivativeNftDepositor,
 );
 
 /// This is the type we use to convert an (incoming) XCM origin into a local `Origin` instance,
@@ -835,261 +745,6 @@ impl pallet_xcm_weight_trader::Config for Runtime {
 	#[cfg(feature = "runtime-benchmarks")]
 	type NotFilteredLocation = RelayLocation;
 }
-
-pub struct EvmNftShim;
-
-impl EvmNftShim {
-	const NFT_TRANSFER_CALL_DATA_SIZE: usize = 4 + 32 + 32 + 32; // selector + from + to + token_id
-	const NFT_TRANSFER_SELECTOR: [u8; 4] = hex!("23b872dd");
-	const NFT_OWNER_OF_CALL_DATA_SIZE: usize = 4 + 32; // selector + token_id
-	const NFT_MINT_INTO_CALL_DATA_SIZE: usize = 4 + 32 + 32; // selector + token_id
-}
-
-type FullNftId = (AccountId, U256);
-
-impl AssetDefinition for EvmNftShim {
-	type Id = FullNftId;
-}
-
-impl AssetTransfer<FromTo<AccountId>> for EvmNftShim {
-	fn transfer(full_nft_id: &Self::Id, strategy: FromTo<AccountId>) -> DispatchResult {
-		let (contract_addr, nft_id) = full_nft_id;
-		let FromTo(from, to) = strategy;
-
-		let mut input = Vec::with_capacity(Self::NFT_TRANSFER_CALL_DATA_SIZE);
-		// NFT.transfer method hash
-		input.extend_from_slice(&Self::NFT_TRANSFER_SELECTOR);
-		input.extend_from_slice(&[0u8; 12]);
-		input.extend_from_slice(&<[u8; 20]>::from(from));
-		input.extend_from_slice(&[0u8; 12]);
-		input.extend_from_slice(&<[u8; 20]>::from(to));
-		// append nft_id to be transferred
-		let mut nft_id_bytes = [0u8; 32];
-		nft_id.to_big_endian(&mut nft_id_bytes);
-		input.extend_from_slice(&nft_id_bytes);
-
-		let gas_limit = 2000000;
-
-		let weight_limit: Weight =
-			pallet_evm::FixedGasWeightMapping::<Runtime>::gas_to_weight(gas_limit, true);
-
-		let exec_info = EvmRunnerPrecompileOrEthXcm::<MoonbeamCall, Runtime>::call(
-			from.into(),
-			(*contract_addr).into(),
-			input,
-			U256::default(),
-			gas_limit,
-			None,
-			None,
-			None,
-			Default::default(),
-			false,
-			false,
-			Some(weight_limit),
-			Some(0),
-			&<Runtime as pallet_evm::Config>::config(),
-		)
-		.map_err(|err| err.error)?;
-
-		ensure!(
-			matches!(
-				exec_info.exit_reason,
-				ExitReason::Succeed(ExitSucceed::Returned | ExitSucceed::Stopped)
-			),
-			DispatchError::Other("Contract transfer error")
-		);
-
-		Ok(())
-	}
-}
-
-impl Create<Owned<AccountId, DeriveAndReportId<NonFungibleAsset, FullNftId>>> for EvmNftShim {
-	fn create(
-		strategy: Owned<AccountId, DeriveAndReportId<NonFungibleAsset, FullNftId>>,
-	) -> Result<FullNftId, DispatchError> {
-		let Owned {
-			owner,
-			id_assignment,
-			..
-		} = strategy;
-		let (asset_id, asset_instance) = id_assignment.params;
-
-		let full_nft_id @ (contract_addr, nft_id) =
-			try_get_full_derivative_nft_id(&asset_id.0, &asset_instance)?;
-
-		let mut input = Vec::with_capacity(Self::NFT_MINT_INTO_CALL_DATA_SIZE);
-		// Selector
-		input.extend_from_slice(&keccak256!("mintInto(address,uint256)")[..4]);
-		// append beneficiary address
-		input.extend_from_slice(&[0u8; 12]);
-		input.extend_from_slice(&<[u8; 20]>::from(owner));
-		// append nft_id to be minted
-		let mut nft_id_bytes = [0u8; 32];
-		nft_id.to_big_endian(&mut nft_id_bytes);
-		input.extend_from_slice(&nft_id_bytes);
-
-		let gas_limit = 2000000;
-
-		let weight_limit: Weight =
-			pallet_evm::FixedGasWeightMapping::<Runtime>::gas_to_weight(gas_limit, true);
-
-		let exec_info = EvmRunnerPrecompileOrEthXcm::<MoonbeamCall, Runtime>::call(
-			EvmForeignAssets::account_id(),
-			contract_addr.into(),
-			input,
-			U256::default(),
-			gas_limit,
-			None,
-			None,
-			None,
-			Default::default(),
-			false,
-			false,
-			Some(weight_limit),
-			Some(0),
-			&<Runtime as pallet_evm::Config>::config(),
-		)
-		.map_err(|err| err.error)?;
-
-		ensure!(
-			matches!(
-				exec_info.exit_reason,
-				ExitReason::Succeed(ExitSucceed::Returned | ExitSucceed::Stopped)
-			),
-			DispatchError::Other("Contract create error")
-		);
-
-		Ok(full_nft_id)
-	}
-}
-
-impl EvmNftShim {
-	fn is_nft_exists(full_nft_id: &FullNftId) -> Result<bool, DispatchError> {
-		let (contract_addr, nft_id) = full_nft_id;
-
-		let mut input = Vec::with_capacity(Self::NFT_OWNER_OF_CALL_DATA_SIZE);
-		// NFT.transfer method hash
-		input.extend_from_slice(&keccak256!("exists(uint256)")[..4]);
-		// append nft_id to be checked
-		let mut nft_id_bytes = [0u8; 32];
-		nft_id.to_big_endian(&mut nft_id_bytes);
-		input.extend_from_slice(&nft_id_bytes);
-
-		let gas_limit = 20000000;
-
-		let weight_limit: Weight =
-			pallet_evm::FixedGasWeightMapping::<Runtime>::gas_to_weight(gas_limit, true);
-
-		let exec_info = EvmRunnerPrecompileOrEthXcm::<MoonbeamCall, Runtime>::call(
-			EvmForeignAssets::account_id(),
-			(*contract_addr).into(),
-			input,
-			U256::default(),
-			gas_limit,
-			None,
-			None,
-			None,
-			Default::default(),
-			false,
-			false,
-			Some(weight_limit),
-			Some(0),
-			&<Runtime as pallet_evm::Config>::config(),
-		)
-		.map_err(|err| err.error)?;
-
-		ensure!(
-			matches!(
-				exec_info.exit_reason,
-				ExitReason::Succeed(ExitSucceed::Returned | ExitSucceed::Stopped)
-			),
-			DispatchError::Other("Contract transfer error")
-		);
-
-		// return value is true.
-		let mut bytes = [0u8; 32];
-		U256::from(1).to_big_endian(&mut bytes);
-
-		// Check return value to make sure not calling on empty contracts.
-		ensure!(
-			!exec_info.value.is_empty(),
-			DispatchError::Other("Contract is_nft_exists error")
-		);
-
-		Ok(exec_info.value == bytes)
-	}
-}
-
-type DerivativeNftDepositor =
-	UniqueInstancesDepositAdapter<AccountId, LocationToAccountId, EvmNftShim>;
-
-parameter_types! {
-	pub StashAccountId: AccountId = crate::Treasury::account_id();
-}
-
-type NftStash = SimpleStash<StashAccountId, EvmNftShim>;
-
-// This NFT engine which will:
-// 1. transfer the NFT to the stash on destroy
-// 2. on transfer it will just transfer
-// 3. transfer the NFT from the stash to the beneficiary on create
-//
-// We will use it as a parameter to the XCM adapter.
-type StashableNfts =
-	UniqueInstancesOps<RestoreOnCreate<NftStash>, EvmNftShim, StashOnDestroy<NftStash>>;
-
-fn try_get_full_derivative_nft_id(
-	location: &Location,
-	instance: &AssetInstance,
-) -> Result<FullNftId, DispatchError> {
-	let foreign_asset_id = EvmForeignAssets::asset_id_by_location(location)
-		.ok_or(DispatchError::Other("Foreign NFT not found"))?;
-	let contract_addr = EvmForeignAssets::contract_address_from_asset_id(foreign_asset_id);
-
-	let nft_id = match instance {
-		// NOTE: the actual conversions might differ in your implementation.
-		Index(id) => *id,
-
-		_ => return Err(DispatchError::Other("Foreign NFT not found")),
-	};
-
-	Ok((contract_addr.into(), nft_id.into()))
-}
-
-pub struct NftMatcher;
-impl MatchesInstance<FullNftId> for NftMatcher {
-	fn matches_instance(asset: &Asset) -> Result<FullNftId, MatchError> {
-		match (asset.id.0.unpack(), &asset.fun) {
-			(
-				(
-					0,
-					&[AccountKey20 {
-						key: contract_addr, ..
-					}],
-				),
-				&NonFungible(Index(nft_id)),
-			) if EvmForeignAssets::asset_id_by_location(&asset.id.0).is_none() => {
-				Ok((contract_addr.into(), nft_id.into()))
-			}
-			(_, NonFungible(asset_instance)) => {
-				let full_nft_id = try_get_full_derivative_nft_id(&asset.id.0, asset_instance)
-					.map_err(|_| MatchError::AssetNotHandled)?;
-
-				if EvmNftShim::is_nft_exists(&full_nft_id)
-					.map_err(|_| MatchError::AssetNotHandled)?
-				{
-					Ok(full_nft_id)
-				} else {
-					Err(MatchError::AssetNotHandled)
-				}
-			}
-			_ => return Err(MatchError::AssetNotHandled),
-		}
-	}
-}
-
-pub type NftTransactor =
-	UniqueInstancesAdapter<AccountId, LocationToAccountId, NftMatcher, StashableNfts>;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod testing {

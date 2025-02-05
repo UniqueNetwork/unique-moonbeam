@@ -321,9 +321,6 @@ impl<T: crate::Config> Trader<T> {
 		weight: &Weight,
 		asset_location: &Location,
 	) -> Result<u128, XcmError> {
-		log::info!(
-			"TEST WeightTrader compute_amount_to_charge {weight} location {asset_location:?}"
-		);
 		if *asset_location == <T as crate::Config>::NativeLocation::get() {
 			<T as crate::Config>::WeightToFee::weight_to_fee(&weight)
 				.try_into()
@@ -335,9 +332,6 @@ impl<T: crate::Config> Trader<T> {
 				let native_amount: u128 = <T as crate::Config>::WeightToFee::weight_to_fee(&weight)
 					.try_into()
 					.map_err(|_| XcmError::Overflow)?;
-				log::info!(
-					"TEST WeightTrader native_amount {native_amount:?} relative price {relative_price:?}"
-				);
 				Ok(native_amount
 					.checked_mul(10u128.pow(RELATIVE_PRICE_DECIMALS))
 					.ok_or(XcmError::Overflow)?
@@ -398,7 +392,6 @@ impl<T: crate::Config> WeightTrader for Trader<T> {
 					fun: Fungibility::Fungible(amount),
 					id: XcmAssetId(location),
 				};
-				log::info!("TEST evmWeightTrader buy_weight {payment:?} required {required:?}");
 				let unused = payment
 					.checked_sub(required.clone())
 					.map_err(|_| XcmError::TooExpensive)?;
