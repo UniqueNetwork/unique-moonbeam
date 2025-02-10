@@ -1000,12 +1000,8 @@ impl MatchesInstance<FullNftId> for NftMatcher {
 				&NonFungible(instance),
 			) if crate::DerivativeNfts::get_derivative(&asset.id).is_none() => {
 				let nft_id = match instance {
-					Undefined => return Err(MatchError::AssetNotHandled),
-					Index(id) => U256::from(id),
-					Array4(id) => U256::from_big_endian(&id),
-					Array8(id) => U256::from_big_endian(&id),
-					Array16(id) => U256::from_big_endian(&id),
 					Array32(id) => U256::from_big_endian(&id),
+					_ => return Err(MatchError::AssetNotHandled),
 				};
 				Ok((contract_addr.into(), nft_id))
 			}
