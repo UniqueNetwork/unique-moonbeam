@@ -40,7 +40,7 @@ pub use fp_evm::GenesisAccount;
 pub use frame_support::traits::Get;
 use frame_support::{
 	construct_runtime,
-	dispatch::{DispatchClass, GetDispatchInfo, PostDispatchInfo},
+	dispatch::{DispatchClass, GetDispatchInfo, PostDispatchInfo, RawOrigin},
 	ensure,
 	pallet_prelude::DispatchResult,
 	parameter_types,
@@ -53,7 +53,7 @@ use frame_support::{
 		},
 		ConstBool, ConstU128, ConstU16, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
 		EqualPrivilegeOnly, Imbalance, InstanceFilter, LinearStoragePrice, OnFinalize,
-		OnUnbalanced,
+		OnUnbalanced, EnsureOriginWithArg,
 	},
 	weights::{
 		constants::WEIGHT_REF_TIME_PER_SECOND, ConstantMultiplier, Weight, WeightToFeeCoefficient,
@@ -1449,12 +1449,30 @@ impl CreateStrategy for DerivativeNftParams {
 	type Success = DerivativeCollectionInfo;
 }
 
+pub struct DerivativeCollectionCreateOrigin;
+impl EnsureOriginWithArg<RuntimeOrigin, xcm::latest::AssetId>
+	for DerivativeCollectionCreateOrigin
+{
+	type Success = AccountId;
+
+	fn try_origin(o: RuntimeOrigin, asset_id: &xcm::latest::AssetId) -> Result<Self::Success, RuntimeOrigin> {
+		// All derivatives must have originals located on other chains
+		if asset_id.0.parents == 0 {
+			return Err(o);
+		}
+
+		// The derivative collections are managed by the Treasury
+		EnsureSigned::try_origin(o, asset_id)
+			.map(|_| TreasuryAccount::get())
+	}
+}
+
 #[derive(Encode, Debug, Decode, TypeInfo, Clone, PartialEq, Eq)]
 pub struct DerivativeCollectionsExtrinsics;
-impl pallet_derivatives::ExtrinsicsConfig<RuntimeOrigin, DerivativeCollectionInfo>
+impl pallet_derivatives::ExtrinsicsConfig<RuntimeOrigin, xcm::latest::AssetId, DerivativeCollectionInfo>
 	for DerivativeCollectionsExtrinsics
 {
-	type CreateOrigin = EnsureRoot<AccountId>;
+	type CreateOrigin = DerivativeCollectionCreateOrigin;
 	type DestroyOrigin = EnsureNever<()>;
 
 	type DerivativeCreateParams = DerivativeNftParams;
