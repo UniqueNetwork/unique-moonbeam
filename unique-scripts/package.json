@@ -1,0 +1,23 @@
+{
+  "name": "xcm-js-examples",
+  "type": "module",
+  "scripts": {
+    "get-account": "node --loader ts-node/esm ./get-account.ts",
+    "get-balance": "node --loader ts-node/esm ./get-balance.ts",
+    "tx": "node --loader ts-node/esm ./tx.ts",
+    "mk-transfer": "node --loader ts-node/esm ./mk-transfer.ts"
+  },
+  "dependencies": {
+    "@ashkuc/simple-xcm": "^0.3.6",
+    "@ashkuc/xcm-estimate": "^0.3.6",
+    "@ashkuc/xcm-types": "^0.3.6",
+    "@ashkuc/xcm-util": "^0.3.6",
+    "@polkadot/api": "^15.2.1",
+    "@polkadot/types": "^15.5.2",
+    "@types/node": "^22.7.6",
+    "ts-command-line-args": "^2.5.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  },
+  "packageManager": "yarn@4.5.0"
+}
