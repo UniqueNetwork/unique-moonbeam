@@ -1,4 +1,4 @@
-import { ApiPromise, Keyring, WsProvider } from '@polkadot/api';
+import { ApiPromise, WsProvider } from '@polkadot/api';
 import { parse } from 'ts-command-line-args';
 
 interface Args {

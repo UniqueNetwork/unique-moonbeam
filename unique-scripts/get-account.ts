@@ -1,6 +1,7 @@
 import { Keyring } from '@polkadot/api';
 import { randomAsHex, cryptoWaitReady } from '@polkadot/util-crypto';
 import { parse } from 'ts-command-line-args';
+import { requireAtLeastOne, requireExactlyOne } from './util';
 
 interface Args {
     byName?: string,
@@ -9,32 +10,6 @@ interface Args {
     showSeed?: boolean,
     showAddr?: boolean,
     help?: boolean;
-}
-
-function requireExactlyOne(args: Args, required: string[]) {
-    const supplied = requireAtLeastOne(args, required);
-
-    if (supplied.length > 1) {
-        console.error(
-            'Conflicting options:',
-            supplied.map(o => '--' + o).join(', ')
-        );
-        process.exit(-1);
-    }
-}
-
-function requireAtLeastOne(args: Args, required: string[]) {
-    const requiredSupplied = required.filter(r => (args as any)[r] !== undefined);
-
-    if (requiredSupplied.length === 0) {
-        console.error(
-            'One of the following options *must* be provided:',
-            required.map(o => '--' + o).join(', ')
-        );
-        process.exit(-1);
-    }
-
-    return requiredSupplied;
 }
 
 void (async () => {

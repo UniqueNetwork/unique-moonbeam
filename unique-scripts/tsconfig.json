@@ -13,8 +13,7 @@
     ".yarn"
   ],
   "include": [
-    "tx.ts",
-    "get-account.ts"
+    "./*.ts"
   ],
   "ts-node": {
     "esm": true,

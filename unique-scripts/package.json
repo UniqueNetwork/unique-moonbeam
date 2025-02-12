@@ -4,8 +4,13 @@
   "scripts": {
     "get-account": "node --loader ts-node/esm ./get-account.ts",
     "get-balance": "node --loader ts-node/esm ./get-balance.ts",
+    "get-root": "node --loader ts-node/esm ./get-root.ts",
+    "hash": "node --loader ts-node/esm ./hash.ts",
     "tx": "node --loader ts-node/esm ./tx.ts",
-    "mk-transfer": "node --loader ts-node/esm ./mk-transfer.ts"
+    "mk-transfer": "node --loader ts-node/esm ./mk-transfer.ts",
+    "mk-setroot": "node --loader ts-node/esm ./mk-setroot.ts",
+    "mk-auth-upgrade": "node --loader ts-node/esm ./mk-auth-upgrade.ts",
+    "mk-apply-upgrade": "node --loader ts-node/esm ./mk-apply-upgrade.ts"
   },
   "dependencies": {
     "@ashkuc/simple-xcm": "^0.3.6",
@@ -19,5 +24,5 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   },
-  "packageManager": "yarn@4.5.0"
+  "packageManager": "yarn@4.6.0"
 }
