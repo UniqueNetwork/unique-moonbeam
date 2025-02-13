@@ -10,13 +10,15 @@
     "mk-transfer": "node --loader ts-node/esm ./mk-transfer.ts",
     "mk-setroot": "node --loader ts-node/esm ./mk-setroot.ts",
     "mk-auth-upgrade": "node --loader ts-node/esm ./mk-auth-upgrade.ts",
-    "mk-apply-upgrade": "node --loader ts-node/esm ./mk-apply-upgrade.ts"
+    "mk-apply-upgrade": "node --loader ts-node/esm ./mk-apply-upgrade.ts",
+    "mk-derivative-nft-collection": "node --loader ts-node/esm ./mk-derivative-nft-collection.ts",
+    "mk-xnft-transfer": "node --loader ts-node/esm ./mk-xnft-transfer.ts"
   },
   "dependencies": {
-    "@ashkuc/simple-xcm": "^0.3.6",
-    "@ashkuc/xcm-estimate": "^0.3.6",
-    "@ashkuc/xcm-types": "^0.3.6",
-    "@ashkuc/xcm-util": "^0.3.6",
+    "@ashkuc/simple-xcm": "^0.3.9",
+    "@ashkuc/xcm-estimate": "^0.3.9",
+    "@ashkuc/xcm-types": "^0.3.9",
+    "@ashkuc/xcm-util": "^0.3.9",
     "@polkadot/api": "^15.2.1",
     "@polkadot/types": "^15.5.2",
     "@types/node": "^22.7.6",

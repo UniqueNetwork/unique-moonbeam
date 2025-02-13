@@ -14,58 +14,58 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ashkuc/simple-xcm@npm:^0.3.6":
-  version: 0.3.6
-  resolution: "@ashkuc/simple-xcm@npm:0.3.6"
+"@ashkuc/simple-xcm@npm:^0.3.9":
+  version: 0.3.10
+  resolution: "@ashkuc/simple-xcm@npm:0.3.10"
   dependencies:
-    "@ashkuc/xcm-estimate": "npm:0.3.6"
-    "@ashkuc/xcm-types": "npm:0.3.6"
-    "@ashkuc/xcm-util": "npm:0.3.6"
+    "@ashkuc/xcm-estimate": "npm:0.3.10"
+    "@ashkuc/xcm-types": "npm:0.3.10"
+    "@ashkuc/xcm-util": "npm:0.3.10"
     "@polkadot/api": "npm:15.5.1"
     "@polkadot/apps-config": "npm:^0.148.1"
     "@polkadot/keyring": "npm:^13.3.1"
     "@polkadot/typegen": "npm:^15.5.1"
     "@polkadot/util": "npm:^13.3.1"
     "@polkadot/wasm-util": "npm:*"
-  checksum: 10c0/1a721463e0119aec1c26cfce6dca71b76bc40baa88a9ce7144d9e7addda0f76cc2773ffe60352cb85394550c6af0bb9c415da3e8bdf03b3988cc36dff146d24a
+  checksum: 10c0/49a28da9d435e8aa0326f95cfa17305540c80a1c971ac605f939c6f4d0defdaccf35f8aaa3abc023b3d9bebf4e060d648060202c038e2657832f71856d71e06d
   languageName: node
   linkType: hard
 
-"@ashkuc/xcm-estimate@npm:0.3.6, @ashkuc/xcm-estimate@npm:^0.3.6":
-  version: 0.3.6
-  resolution: "@ashkuc/xcm-estimate@npm:0.3.6"
+"@ashkuc/xcm-estimate@npm:0.3.10, @ashkuc/xcm-estimate@npm:^0.3.9":
+  version: 0.3.10
+  resolution: "@ashkuc/xcm-estimate@npm:0.3.10"
   dependencies:
-    "@ashkuc/xcm-types": "npm:0.3.6"
-    "@ashkuc/xcm-util": "npm:0.3.6"
+    "@ashkuc/xcm-types": "npm:0.3.10"
+    "@ashkuc/xcm-util": "npm:0.3.10"
     "@polkadot/api": "npm:15.5.1"
     "@polkadot/apps-config": "npm:^0.148.1"
     "@polkadot/keyring": "npm:^13.3.1"
     "@polkadot/typegen": "npm:^15.5.1"
     "@polkadot/util": "npm:^13.3.1"
     "@polkadot/wasm-util": "npm:*"
-  checksum: 10c0/6345d0f644f9c0bd2caf81a26c33f3c20f62335acd1bce13585c0bd9554ef2cb10be7c7b6e101ba585ac90ca0b93a92a95461d5489eb640e98fd707b3774a49d
+  checksum: 10c0/678b349b616f99773e02ddc078a404f9f3d1e72f5c525cea4b2d2ae11bb480af6f2daa02555f81fb7922374341eae28a1bef4c6570d791e429f404a813fbe980
   languageName: node
   linkType: hard
 
-"@ashkuc/xcm-types@npm:0.3.6, @ashkuc/xcm-types@npm:^0.3.6":
-  version: 0.3.6
-  resolution: "@ashkuc/xcm-types@npm:0.3.6"
-  checksum: 10c0/4e3ceb22493581ded7fbbe78394aae11e109718b8d929c1a35edf7119b932acfd6ce35a1a64192c4d6c8b6a04cabe6a45f014eff53bd1d6c586057a87d80f9bc
+"@ashkuc/xcm-types@npm:0.3.10, @ashkuc/xcm-types@npm:^0.3.9":
+  version: 0.3.10
+  resolution: "@ashkuc/xcm-types@npm:0.3.10"
+  checksum: 10c0/8c0abbedec8cd451a723bbf16e03ff56bee471931eeb76df2bfdeffbfcccec42729c7f7e80f0f5ec22526028fbbf536e4ac9313ada8df346f80d09f7dc7cf4bc
   languageName: node
   linkType: hard
 
-"@ashkuc/xcm-util@npm:0.3.6, @ashkuc/xcm-util@npm:^0.3.6":
-  version: 0.3.6
-  resolution: "@ashkuc/xcm-util@npm:0.3.6"
+"@ashkuc/xcm-util@npm:0.3.10, @ashkuc/xcm-util@npm:^0.3.9":
+  version: 0.3.10
+  resolution: "@ashkuc/xcm-util@npm:0.3.10"
   dependencies:
-    "@ashkuc/xcm-types": "npm:0.3.6"
+    "@ashkuc/xcm-types": "npm:0.3.10"
     "@polkadot/api": "npm:15.5.1"
     "@polkadot/apps-config": "npm:^0.148.1"
     "@polkadot/keyring": "npm:^13.3.1"
     "@polkadot/typegen": "npm:^15.5.1"
     "@polkadot/util": "npm:^13.3.1"
     "@polkadot/wasm-util": "npm:*"
-  checksum: 10c0/0522a21908cc65e2cff03ed490e61389e2ebcbb8c739cc144faecc665fb7f0eb1b33337bd4a4391d8c52e9ee638e14a9eea9bad8cdb9716c63849c3a2435af5b
+  checksum: 10c0/b1d5b354f7deba2cd3da1ee9b8bfac16c3a99eafa295410c2e2e07e9013d765cb0414502d4c58b943b723a138665c0c42edba8c0678777c0a12720ff48b792a8
   languageName: node
   linkType: hard
 
@@ -5556,10 +5556,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "xcm-js-examples@workspace:."
   dependencies:
-    "@ashkuc/simple-xcm": "npm:^0.3.6"
-    "@ashkuc/xcm-estimate": "npm:^0.3.6"
-    "@ashkuc/xcm-types": "npm:^0.3.6"
-    "@ashkuc/xcm-util": "npm:^0.3.6"
+    "@ashkuc/simple-xcm": "npm:^0.3.9"
+    "@ashkuc/xcm-estimate": "npm:^0.3.9"
+    "@ashkuc/xcm-types": "npm:^0.3.9"
+    "@ashkuc/xcm-util": "npm:^0.3.9"
     "@polkadot/api": "npm:^15.2.1"
     "@polkadot/types": "npm:^15.5.2"
     "@types/node": "npm:^22.7.6"
